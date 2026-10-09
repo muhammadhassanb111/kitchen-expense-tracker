@@ -564,10 +564,12 @@ app.get('/api/dashboard/stats', (req, res) => {
   }
 });
 
-// -------------------------------------------------------------
-// CSV EXPORT ROUTE
-// -------------------------------------------------------------
 app.get('/api/export/csv', (req, res) => {
+  // Prevent accidental downloads if browser history navigates here via back/forward
+  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+    return res.redirect('/#expenses');
+  }
+
   try {
     const { startDate, endDate, categoryId, search } = req.query;
 
@@ -708,6 +710,11 @@ app.post('/api/backup/restore-snapshot', (req, res) => {
 
 // Download standalone database copy
 app.get('/api/backup/db', async (req, res) => {
+  // Prevent accidental downloads if browser history navigates here via back/forward
+  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+    return res.redirect('/#settings');
+  }
+
   try {
     backupService.checkpointWal();
     const timestamp = new Date().toISOString().split('T')[0];

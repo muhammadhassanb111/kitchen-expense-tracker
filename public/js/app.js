@@ -19,11 +19,34 @@ const App = {
     this.initTheme();
     this.setupDateRanges('month');
     this.bindEvents();
+    this.initHistoryNavigation();
     if (window.Icons) window.Icons.replacePlaceholders();
 
     await this.loadSettings();
     await this.loadCategories();
     this.refreshCurrentTab();
+  },
+
+  initHistoryNavigation() {
+    const validTabs = ['dashboard', 'expenses', 'payouts', 'categories', 'settings'];
+    const hash = window.location.hash.replace('#', '');
+    const initialTab = validTabs.includes(hash) ? hash : 'dashboard';
+
+    // Replace current state so root entry is clean
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({ tab: initialTab }, '', `#${initialTab}`);
+    }
+    this.switchTab(initialTab, false);
+
+    // Handle browser Back and Forward buttons
+    window.addEventListener('popstate', (e) => {
+      const targetTab = (e.state && e.state.tab) || window.location.hash.replace('#', '') || 'dashboard';
+      if (validTabs.includes(targetTab)) {
+        this.switchTab(targetTab, false);
+      } else {
+        this.switchTab('dashboard', false);
+      }
+    });
   },
 
   // ------------------------------------------
@@ -83,7 +106,7 @@ const App = {
   // ------------------------------------------
   // Tab Switching & Navigation
   // ------------------------------------------
-  switchTab(tabName) {
+  switchTab(tabName, pushState = true) {
     this.state.currentTab = tabName;
 
     // Update bottom nav & desktop nav buttons
@@ -106,8 +129,39 @@ const App = {
       filterBar.style.display = 'none';
     }
 
+    // Update browser history so Back button navigates between tabs without triggering downloads
+    if (pushState && window.history && window.history.pushState) {
+      if (window.location.hash !== `#${tabName}`) {
+        window.history.pushState({ tab: tabName }, '', `#${tabName}`);
+      }
+    }
+
     // Refresh content for this tab
     this.refreshCurrentTab();
+  },
+
+  // Safe file download helper: uses Blob API without altering window.location or session history
+  async downloadFile(url, fallbackFilename) {
+    try {
+      this.showToast('Preparing download...', 'info');
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Download failed with status ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = blobUrl;
+      a.download = fallbackFilename || 'download';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        if (a.parentNode) document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 200);
+      this.showToast('Download started', 'success');
+    } catch (err) {
+      this.showToast('Download failed: ' + err.message, 'error');
+    }
   },
 
   refreshCurrentTab() {
@@ -550,16 +604,23 @@ const App = {
       });
     }
 
-    // CSV Download All
-    document.getElementById('downloadAllCsvBtn').addEventListener('click', () => {
-      window.location.href = '/api/export/csv';
-    });
+    // CSV Download All (safe blob download, zero history pollution)
+    const csvBtn = document.getElementById('downloadAllCsvBtn');
+    if (csvBtn) {
+      csvBtn.addEventListener('click', () => {
+        this.downloadFile('/api/export/csv', 'expenses_all.csv');
+      });
+    }
 
-    // Database Download backup button
-    document.getElementById('downloadDbBtn').addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = '/api/backup/db';
-    });
+    // Database Download backup button (safe blob download, zero history pollution)
+    const dbBtn = document.getElementById('downloadDbBtn');
+    if (dbBtn) {
+      dbBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const today = new Date().toISOString().split('T')[0];
+        this.downloadFile('/api/backup/db', `kitchen_backup_${today}.db`);
+      });
+    }
 
     // Manual GitHub Cloud Sync Button
     const syncGitBtn = document.getElementById('syncGitNowBtn');
