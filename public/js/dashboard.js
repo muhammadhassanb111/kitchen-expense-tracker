@@ -1,5 +1,6 @@
 // ==========================================
 // Kitchen Expense Tracker - Dashboard Module
+// 2026 Next-Gen Fintech Edition
 // ==========================================
 
 const Dashboard = {
@@ -17,38 +18,49 @@ const Dashboard = {
   },
 
   renderSummary(summary, dailyTrend) {
-    document.getElementById('dashTotalSpent').textContent = App.formatCurrency(summary.totalSpent);
+    // 1. Total Spent
+    App.animateCount('dashTotalSpent', summary.totalSpent, `${App.state.currency} `);
     document.getElementById('dashExpenseCount').textContent = `${summary.expenseCount} purchases recorded`;
 
-    document.getElementById('dashTotalPayouts').textContent = App.formatCurrency(summary.totalPayouts);
+    // 2. Payouts Received
+    App.animateCount('dashTotalPayouts', summary.totalPayouts, `${App.state.currency} `);
 
+    // 3. Net Profit / Loss
     const netProfitEl = document.getElementById('dashNetProfit');
     const netIconEl = document.getElementById('dashNetIcon');
     const marginEl = document.getElementById('dashProfitMargin');
+    const netBadgeEl = document.getElementById('dashNetBadge');
 
     if (summary.totalPayouts > 0) {
-      if (summary.netProfit >= 0) {
+      const isProfit = summary.netProfit >= 0;
+      if (isProfit) {
         netProfitEl.className = 'stat-value text-success';
-        netProfitEl.textContent = `+ ${App.formatCurrency(summary.netProfit)}`;
-        netIconEl.textContent = '📈';
+        App.animateCount('dashNetProfit', summary.netProfit, `+ ${App.state.currency} `);
+        if (netIconEl) netIconEl.innerHTML = window.Icons.get('trendUp', 'text-success', 20);
+        marginEl.className = 'pulse-badge is-profit';
         marginEl.textContent = `${summary.profitMarginPct}% profit margin`;
+        if (netBadgeEl) netBadgeEl.className = 'stat-icon-badge stat-badge-payouts';
       } else {
         netProfitEl.className = 'stat-value text-danger';
-        netProfitEl.textContent = `- ${App.formatCurrency(Math.abs(summary.netProfit))}`;
-        netIconEl.textContent = '📉';
-        marginEl.textContent = `Deficit for selected period`;
+        App.animateCount('dashNetProfit', Math.abs(summary.netProfit), `- ${App.state.currency} `);
+        if (netIconEl) netIconEl.innerHTML = window.Icons.get('trendDown', 'text-danger', 20);
+        marginEl.className = 'pulse-badge is-loss';
+        marginEl.textContent = 'Deficit for period';
+        if (netBadgeEl) netBadgeEl.className = 'stat-icon-badge stat-badge-spent';
       }
     } else {
       netProfitEl.className = 'stat-value text-muted';
       netProfitEl.textContent = 'No Payout Yet';
-      netIconEl.textContent = '⚖️';
-      marginEl.textContent = 'Add a payout to track P&L';
+      if (netIconEl) netIconEl.innerHTML = window.Icons.get('scale', 'text-muted', 20);
+      marginEl.className = 'pulse-badge';
+      marginEl.textContent = 'Record a payout to track P&L';
+      if (netBadgeEl) netBadgeEl.className = 'stat-icon-badge stat-badge-net';
     }
 
-    // Daily average based on days with spend
+    // 4. Daily average
     const activeDaysCount = dailyTrend && dailyTrend.length > 0 ? dailyTrend.length : 1;
     const dailyAvg = summary.totalSpent > 0 ? (summary.totalSpent / activeDaysCount) : 0;
-    document.getElementById('dashDailyAvg').textContent = App.formatCurrency(dailyAvg);
+    App.animateCount('dashDailyAvg', Math.round(dailyAvg), `${App.state.currency} `);
   },
 
   renderDonutChart(categories, totalSpent) {
@@ -58,9 +70,12 @@ const Dashboard = {
 
     if (!categories || categories.length === 0 || totalSpent === 0) {
       container.innerHTML = `
-        <div style="text-align:center; padding: 30px; color: var(--text-muted);">
-          <span style="font-size:2rem; display:block; margin-bottom: 6px;">📊</span>
-          No expense data for this period
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            ${window.Icons ? window.Icons.get('categories', '', 28) : '📊'}
+          </div>
+          <h4>No Expenses in this Period</h4>
+          <p>Add your first kitchen grocery purchase to see category distribution.</p>
         </div>
       `;
       legend.innerHTML = '';
@@ -70,8 +85,8 @@ const Dashboard = {
 
     countBadge.textContent = `${categories.length} categories`;
 
-    // Build SVG Donut Chart
-    const size = 180;
+    // Modern SVG Donut Chart with sweeping stroke
+    const size = 200;
     const strokeWidth = 26;
     const radius = (size - strokeWidth) / 2;
     const center = size / 2;
@@ -96,6 +111,9 @@ const Dashboard = {
           stroke-dasharray="${strokeDasharray}" 
           stroke-dashoffset="${strokeDashoffset}"
           class="donut-segment"
+          data-name="${cat.name}"
+          data-amount="${App.formatCurrency(cat.total)}"
+          data-pct="${cat.percentage}%"
         >
           <title>${cat.name}: ${App.formatCurrency(cat.total)} (${cat.percentage}%)</title>
         </circle>
@@ -108,17 +126,17 @@ const Dashboard = {
         ${svgPaths}
       </svg>
       <div style="position: absolute; text-align: center; pointer-events: none;">
-        <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600;">TOTAL</span>
-        <strong style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">${App.formatCurrency(totalSpent)}</strong>
+        <span style="font-size: 0.725rem; color: var(--text-muted); display: block; font-weight: 700; letter-spacing: 0.05em;">TOTAL</span>
+        <strong style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">${App.formatCurrency(totalSpent)}</strong>
       </div>
     `;
 
-    // Build Legend
+    // Modern Legend
     legend.innerHTML = categories.map((cat) => `
       <div class="legend-item">
         <div class="legend-left">
-          <span class="legend-dot" style="background-color: ${cat.color || '#6366f1'}"></span>
-          <span>${cat.icon || '🏷️'} ${cat.name}</span>
+          <span class="legend-dot" style="background-color: ${cat.color || '#6366f1'}; box-shadow: 0 0 6px ${cat.color || '#6366f1'};"></span>
+          <span>${cat.name}</span>
         </div>
         <div class="legend-right">
           <span class="legend-amount">${App.formatCurrency(cat.total)}</span>
@@ -133,38 +151,42 @@ const Dashboard = {
 
     if (!dailyTrend || dailyTrend.length === 0) {
       container.innerHTML = `
-        <div style="text-align:center; padding: 40px; color: var(--text-muted);">
-          <span style="font-size:2rem; display:block; margin-bottom: 6px;">📈</span>
-          No daily trend data available for this range
+        <div class="empty-state" style="width:100%;">
+          <div class="empty-state-icon">
+            ${window.Icons ? window.Icons.get('trendUp', '', 28) : '📈'}
+          </div>
+          <h4>No Spending Trend Yet</h4>
+          <p>Daily purchase totals will appear here over your selected date range.</p>
         </div>
       `;
       return;
     }
 
     const maxAmount = Math.max(...dailyTrend.map((d) => d.total), 1);
-    const height = 180;
-    const barWidth = Math.max(16, Math.min(42, Math.floor(340 / dailyTrend.length) - 6));
+    const chartHeight = 180;
+    const barWidth = Math.max(16, Math.min(42, Math.floor(340 / dailyTrend.length) - 8));
 
-    const bars = dailyTrend.map((d) => {
-      const barHeight = Math.max(6, Math.round((d.total / maxAmount) * (height - 40)));
-      const dayLabel = d.date.slice(8); // get DD
+    const bars = dailyTrend.map((d, index) => {
+      const barHeight = Math.max(8, Math.round((d.total / maxAmount) * (chartHeight - 45)));
+      const dayLabel = d.date.slice(8);
       const monthLabel = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(d.date.slice(5, 7), 10) - 1];
 
       return `
-        <div style="display:flex; flex-direction:column; align-items:center; flex:1; min-width: ${barWidth}px;">
-          <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">
+        <div class="trend-bar-column" style="min-width: ${barWidth}px;">
+          <div style="font-size: 0.675rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 700;">
             ${d.total >= 1000 ? (d.total / 1000).toFixed(1) + 'k' : d.total}
           </div>
-          <div style="height: ${height - 40}px; display:flex; align-items:flex-end; width:100%; justify-content:center;">
+          <div style="height: ${chartHeight - 45}px; display:flex; align-items:flex-end; width:100%; justify-content:center;">
             <div 
-              style="width: 80%; max-width: ${barWidth}px; height: ${barHeight}px; background: linear-gradient(180deg, var(--primary), var(--primary-hover)); border-radius: 4px 4px 0 0; transition: height 0.3s ease; cursor: pointer;"
+              class="trend-bar"
+              style="width: 85%; max-width: ${barWidth}px; height: ${barHeight}px;"
               title="${d.date}: ${App.formatCurrency(d.total)} (${d.count} items)"
             ></div>
           </div>
-          <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-top: 6px;">
+          <div style="font-size: 0.725rem; font-weight: 700; color: var(--text-main); margin-top: 6px;">
             ${dayLabel}
           </div>
-          <div style="font-size: 0.6rem; color: var(--text-light);">
+          <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">
             ${monthLabel}
           </div>
         </div>
@@ -172,7 +194,7 @@ const Dashboard = {
     }).join('');
 
     container.innerHTML = `
-      <div style="display: flex; gap: 8px; align-items: flex-end; overflow-x: auto; padding-bottom: 6px; width: 100%;">
+      <div class="trend-bars-wrapper">
         ${bars}
       </div>
     `;
@@ -182,24 +204,29 @@ const Dashboard = {
     const container = document.getElementById('dashRecentList');
     if (!recent || recent.length === 0) {
       container.innerHTML = `
-        <div style="padding: 24px; text-align: center; color: var(--text-muted);">
-          No recent expenses recorded yet.
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            ${window.Icons ? window.Icons.get('receipt', '', 28) : '🧾'}
+          </div>
+          <h4>No Purchases Recorded</h4>
+          <p>Tap "+ Add Expense" to record daily grocery, meat, or supply purchases.</p>
         </div>
       `;
       return;
     }
 
     container.innerHTML = recent.map((item) => `
-      <div class="expense-card" style="margin: 8px 12px; box-shadow: none;">
+      <div class="expense-card" style="border:none; border-bottom: 1px solid var(--border-subtle); border-radius: 0; box-shadow: none; margin: 0; padding: 16px 20px;">
         <div class="exp-card-header">
-          <div>
-            <div class="exp-item-title">${item.item_name}</div>
+          <div style="flex:1;">
+            <div class="exp-item-title">${this.escapeHtml(item.item_name)}</div>
             <div class="exp-card-meta mt-1">
-              <span class="category-pill" style="background-color: ${item.category_color}">
-                ${item.category_icon} ${item.category_name}
+              <span class="category-pill" style="background-color: ${item.category_color};">
+                ${item.category_name}
               </span>
-              <span>📅 ${App.formatDate(item.date)}</span>
-              ${item.quantity ? `<span>⚖️ ${item.quantity} ${item.unit || ''}</span>` : ''}
+              <span>${App.formatDate(item.date)}</span>
+              ${item.quantity ? `<span>• ${item.quantity} ${item.unit || ''}</span>` : ''}
+              ${item.vendor ? `<span>• 🏪 ${this.escapeHtml(item.vendor)}</span>` : ''}
             </div>
           </div>
           <div class="exp-card-amount">
@@ -208,6 +235,16 @@ const Dashboard = {
         </div>
       </div>
     `).join('');
+  },
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 };
 

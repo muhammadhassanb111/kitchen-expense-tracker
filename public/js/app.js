@@ -1,9 +1,11 @@
 // ==========================================
 // Kitchen Expense Tracker - App Core Controller
+// 2026 Next-Gen Fintech Edition
 // ==========================================
 
 const App = {
   state: {
+    theme: localStorage.getItem('kitchen_theme') || 'light',
     currency: 'PKR',
     kitchenName: 'Cloud Kitchen',
     currentTab: 'dashboard',
@@ -14,11 +16,45 @@ const App = {
   },
 
   async init() {
+    this.initTheme();
     this.setupDateRanges('month');
     this.bindEvents();
+    if (window.Icons) window.Icons.replacePlaceholders();
+
     await this.loadSettings();
     await this.loadCategories();
     this.refreshCurrentTab();
+  },
+
+  // ------------------------------------------
+  // Theme Management (Light / Dark Mode)
+  // ------------------------------------------
+  initTheme() {
+    this.setTheme(this.state.theme);
+  },
+
+  setTheme(theme) {
+    this.state.theme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('kitchen_theme', theme);
+
+    // Update Mobile and Desktop Theme Buttons
+    const isDark = theme === 'dark';
+    const mobileIconEl = document.getElementById('mobileThemeIcon');
+    const desktopIconEl = document.getElementById('desktopThemeIcon');
+    const desktopLabelEl = document.getElementById('desktopThemeLabel');
+
+    const iconHtml = window.Icons ? window.Icons.get(isDark ? 'sun' : 'moon', '', 18) : (isDark ? '☀️' : '🌙');
+
+    if (mobileIconEl) mobileIconEl.innerHTML = iconHtml;
+    if (desktopIconEl) desktopIconEl.innerHTML = iconHtml;
+    if (desktopLabelEl) desktopLabelEl.textContent = isDark ? 'Theme: Dark' : 'Theme: Light';
+  },
+
+  toggleTheme() {
+    const next = this.state.theme === 'dark' ? 'light' : 'dark';
+    this.setTheme(next);
+    this.showToast(`Switched to ${next} theme`, 'info');
   },
 
   // ------------------------------------------
@@ -55,7 +91,7 @@ const App = {
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    // Update tab panes
+    // Update tab panes with smooth glide transition
     document.querySelectorAll('.tab-pane').forEach((pane) => {
       pane.classList.remove('active');
     });
@@ -95,7 +131,7 @@ const App = {
   },
 
   // ------------------------------------------
-  // Date Range Handling
+  // Date Range Handling & Segmented Control
   // ------------------------------------------
   setupDateRanges(periodType) {
     this.state.period = periodType;
@@ -142,7 +178,8 @@ const App = {
 
     const label = document.getElementById('activePeriodLabel');
     if (label) {
-      label.textContent = `Period: ${this.formatDate(this.state.startDate)} – ${this.formatDate(this.state.endDate)}`;
+      const calIcon = window.Icons ? window.Icons.get('calendar', '', 14) : '📅';
+      label.innerHTML = `${calIcon} <span>${this.formatDate(this.state.startDate)} – ${this.formatDate(this.state.endDate)}</span>`;
     }
   },
 
@@ -155,7 +192,11 @@ const App = {
       this.state.currency = data.currency || 'PKR';
       this.state.kitchenName = data.kitchenName || 'Cloud Kitchen';
 
-      document.getElementById('kitchenTitleDisplay').textContent = this.state.kitchenName;
+      const titleDesktop = document.getElementById('kitchenTitleDisplay');
+      const titleMobile = document.getElementById('mobileKitchenTitle');
+      if (titleDesktop) titleDesktop.textContent = this.state.kitchenName;
+      if (titleMobile) titleMobile.textContent = this.state.kitchenName;
+
       document.querySelectorAll('.currency-label').forEach((el) => {
         el.textContent = this.state.currency;
       });
@@ -174,8 +215,8 @@ const App = {
 
     if (!ips || ips.length === 0) {
       container.innerHTML = `
-        <div class="ip-box">
-          <code>http://localhost:${port}</code>
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-chip); padding:10px 14px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+          <code style="font-weight:700; color:var(--brand); font-family:monospace; font-size:1rem;">http://localhost:${port}</code>
           <button class="btn btn-sm btn-outline copy-ip-btn" data-url="http://localhost:${port}">Copy</button>
         </div>
       `;
@@ -185,8 +226,8 @@ const App = {
     container.innerHTML = ips.map((ip) => {
       const url = `http://${ip}:${port}`;
       return `
-        <div class="ip-box">
-          <code>${url}</code>
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-chip); padding:10px 14px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+          <code style="font-weight:700; color:var(--brand); font-family:monospace; font-size:1rem;">${url}</code>
           <button class="btn btn-sm btn-outline copy-ip-btn" data-url="${url}">Copy Link</button>
         </div>
       `;
@@ -218,7 +259,7 @@ const App = {
     const modalSelect = document.getElementById('expCategorySelect');
     if (modalSelect) {
       modalSelect.innerHTML = this.state.categories.map((c) => `
-        <option value="${c.id}">${c.icon} ${c.name}</option>
+        <option value="${c.id}">${c.name}</option>
       `).join('');
     }
 
@@ -227,14 +268,14 @@ const App = {
       const currentVal = filterSelect.value || 'all';
       filterSelect.innerHTML = `<option value="all">All Categories</option>` +
         this.state.categories.map((c) => `
-          <option value="${c.id}">${c.icon} ${c.name}</option>
+          <option value="${c.id}">${c.name}</option>
         `).join('');
       filterSelect.value = currentVal;
     }
   },
 
   // ------------------------------------------
-  // Formatting Utilities
+  // Formatting & Animated Count-Up Numbers
   // ------------------------------------------
   formatCurrency(amount) {
     const num = Number(amount) || 0;
@@ -260,6 +301,34 @@ const App = {
     return `${year}-${month}-${day}`;
   },
 
+  animateCount(elementId, targetValue, prefix = '', suffix = '') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    const start = 0;
+    const end = Math.round(Number(targetValue) || 0);
+    const duration = 650;
+    const startTime = performance.now();
+
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(start + (end - start) * ease);
+
+      el.textContent = `${prefix}${current.toLocaleString('en-US')}${suffix}`;
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = `${prefix}${end.toLocaleString('en-US')}${suffix}`;
+      }
+    };
+
+    requestAnimationFrame(step);
+  },
+
   // ------------------------------------------
   // Modal & Toast Helpers
   // ------------------------------------------
@@ -277,14 +346,20 @@ const App = {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    const icon = type === 'success' ? '✓' : type === 'error' ? '⚠️' : 'ℹ️';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+    let iconName = 'info';
+    if (type === 'success') iconName = 'check';
+    if (type === 'error') iconName = 'alertTriangle';
+
+    const iconSvg = window.Icons ? window.Icons.get(iconName, '', 18) : '✓';
+    toast.innerHTML = `<span style="display:flex;align-items:center;">${iconSvg}</span> <span>${message}</span>`;
     container.appendChild(toast);
 
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
+      toast.style.transform = 'translateY(-10px) scale(0.95)';
+      toast.style.transition = 'all 0.25s ease';
+      setTimeout(() => toast.remove(), 250);
     }, 2800);
   },
 
@@ -292,7 +367,13 @@ const App = {
   // Global Event Listeners
   // ------------------------------------------
   bindEvents() {
-    // Navigation (Desktop & Mobile)
+    // Theme toggle buttons (Mobile and Desktop)
+    const mobileToggle = document.getElementById('mobileThemeToggleBtn');
+    const desktopToggle = document.getElementById('desktopThemeToggleBtn');
+    if (mobileToggle) mobileToggle.addEventListener('click', () => this.toggleTheme());
+    if (desktopToggle) desktopToggle.addEventListener('click', () => this.toggleTheme());
+
+    // Navigation buttons (Sidebar & Bottom Nav)
     document.addEventListener('click', (e) => {
       const navBtn = e.target.closest('[data-tab]');
       if (navBtn) {
@@ -300,10 +381,10 @@ const App = {
       }
     });
 
-    // Period Filter Pills
-    document.querySelectorAll('.pill-btn').forEach((btn) => {
+    // Segmented Period Filter
+    document.querySelectorAll('.segment-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.pill-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.segment-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
 
         const period = btn.dataset.period;
@@ -354,17 +435,19 @@ const App = {
     });
 
     // View All Expenses button on Dashboard
-    document.getElementById('viewAllExpensesBtn').addEventListener('click', () => {
-      this.switchTab('expenses');
-    });
+    const viewAllBtn = document.getElementById('viewAllExpensesBtn');
+    if (viewAllBtn) {
+      viewAllBtn.addEventListener('click', () => this.switchTab('expenses'));
+    }
 
-    // FAB Add button and desktop Add button
-    document.getElementById('fabAddBtn').addEventListener('click', () => {
-      if (window.Expenses) window.Expenses.openAddModal();
-    });
-    document.getElementById('addExpenseHeaderBtn').addEventListener('click', () => {
-      if (window.Expenses) window.Expenses.openAddModal();
-    });
+    // Quick Add buttons (Mobile FAB, Desktop Top, Expenses Header)
+    const fabBtn = document.getElementById('fabAddBtn');
+    const desktopQuickBtn = document.getElementById('desktopQuickAddBtn');
+    const addHeaderBtn = document.getElementById('addExpenseHeaderBtn');
+
+    if (fabBtn) fabBtn.addEventListener('click', () => window.Expenses && window.Expenses.openAddModal());
+    if (desktopQuickBtn) desktopQuickBtn.addEventListener('click', () => window.Expenses && window.Expenses.openAddModal());
+    if (addHeaderBtn) addHeaderBtn.addEventListener('click', () => window.Expenses && window.Expenses.openAddModal());
 
     // Save Kitchen Preferences Form
     document.getElementById('kitchenSettingsForm').addEventListener('submit', async (e) => {
@@ -379,11 +462,16 @@ const App = {
         });
         this.state.kitchenName = kitchenName;
         this.state.currency = currency;
-        document.getElementById('kitchenTitleDisplay').textContent = kitchenName;
+        const dTitle = document.getElementById('kitchenTitleDisplay');
+        const mTitle = document.getElementById('mobileKitchenTitle');
+        if (dTitle) dTitle.textContent = kitchenName;
+        if (mTitle) mTitle.textContent = kitchenName;
+
         document.querySelectorAll('.currency-label').forEach((el) => {
           el.textContent = currency;
         });
         this.showToast('Preferences saved successfully', 'success');
+        this.refreshCurrentTab();
       } catch (err) {
         this.showToast(err.message, 'error');
       }

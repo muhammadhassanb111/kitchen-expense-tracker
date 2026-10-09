@@ -78,15 +78,22 @@ const Expenses = {
     if (this.currentExpenses.length === 0) {
       container.className = 'expenses-wrapper';
       container.innerHTML = `
-        <div class="card" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
-          <span style="font-size: 3rem; display: block; margin-bottom: 8px;">🧾</span>
-          <h4 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 4px;">No Expenses Found</h4>
-          <p style="font-size: 0.85rem; margin-bottom: 16px;">No expenses match the current filter or date range.</p>
-          <button class="btn btn-primary btn-sm" onclick="Expenses.openAddModal()">+ Add New Expense</button>
+        <div class="card empty-state" style="padding: 60px 20px;">
+          <div class="empty-state-icon">
+            ${window.Icons ? window.Icons.get('expenses', '', 32) : '🧾'}
+          </div>
+          <h4>No Expenses Found</h4>
+          <p>No expenses match the current filter or date range. Tap below to record one.</p>
+          <button class="btn btn-primary btn-sm mt-2" onclick="Expenses.openAddModal()">
+            ${window.Icons ? window.Icons.get('plus', '', 16) : '+'} Add New Expense
+          </button>
         </div>
       `;
       return;
     }
+
+    const editIcon = window.Icons ? window.Icons.get('edit', '', 16) : '✏️';
+    const trashIcon = window.Icons ? window.Icons.get('trash', '', 16) : '🗑️';
 
     // 1. Mobile Cards View
     const cardsHtml = `
@@ -98,10 +105,10 @@ const Expenses = {
                 <div class="exp-item-title">${this.escapeHtml(item.item_name)}</div>
                 <div class="exp-card-meta mt-1">
                   <span class="category-pill" style="background-color: ${item.category_color}">
-                    ${item.category_icon} ${item.category_name}
+                    ${item.category_name}
                   </span>
-                  <span>📅 ${App.formatDate(item.date)}</span>
-                  ${item.quantity ? `<span>⚖️ ${item.quantity} ${item.unit || ''}</span>` : ''}
+                  <span>${App.formatDate(item.date)}</span>
+                  ${item.quantity ? `<span>• ${item.quantity} ${item.unit || ''}</span>` : ''}
                 </div>
               </div>
               <div class="exp-card-amount">
@@ -117,10 +124,10 @@ const Expenses = {
               </div>
               <div class="exp-actions">
                 <button class="btn-icon-action edit-expense-btn" data-id="${item.id}" title="Edit Expense" aria-label="Edit">
-                  ✏️
+                  ${editIcon}
                 </button>
                 <button class="btn-icon-action delete-action delete-expense-btn" data-id="${item.id}" title="Delete Expense" aria-label="Delete">
-                  🗑️
+                  ${trashIcon}
                 </button>
               </div>
             </div>
@@ -148,25 +155,25 @@ const Expenses = {
           <tbody>
             ${this.currentExpenses.map((item) => `
               <tr data-id="${item.id}">
-                <td style="white-space: nowrap; font-weight: 500;">${App.formatDate(item.date)}</td>
+                <td style="white-space: nowrap; font-weight: 600; color: var(--text-muted);">${App.formatDate(item.date)}</td>
                 <td><strong style="color: var(--text-main);">${this.escapeHtml(item.item_name)}</strong></td>
                 <td>
                   <span class="category-pill" style="background-color: ${item.category_color}">
-                    ${item.category_icon} ${item.category_name}
+                    ${item.category_name}
                   </span>
                 </td>
-                <td style="color: var(--text-muted);">${item.quantity ? `${item.quantity} ${item.unit || ''}` : '—'}</td>
+                <td style="color: var(--text-muted); font-weight: 500;">${item.quantity ? `${item.quantity} ${item.unit || ''}` : '—'}</td>
                 <td style="color: var(--text-muted);">${item.vendor ? this.escapeHtml(item.vendor) : '—'}</td>
                 <td style="color: var(--text-muted); font-size: 0.825rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                   ${item.notes ? this.escapeHtml(item.notes) : '—'}
                 </td>
-                <td style="text-align: right; font-weight: 800; color: var(--danger); white-space: nowrap;">
+                <td style="text-align: right; font-weight: 800; color: var(--outflow); white-space: nowrap;">
                   ${App.formatCurrency(item.amount)}
                 </td>
                 <td style="text-align: center;">
-                  <div style="display: flex; gap: 4px; justify-content: center;">
-                    <button class="btn-icon-action edit-expense-btn" data-id="${item.id}" title="Edit">✏️</button>
-                    <button class="btn-icon-action delete-action delete-expense-btn" data-id="${item.id}" title="Delete">🗑️</button>
+                  <div style="display: flex; gap: 6px; justify-content: center;">
+                    <button class="btn-icon-action edit-expense-btn" data-id="${item.id}" title="Edit">${editIcon}</button>
+                    <button class="btn-icon-action delete-action delete-expense-btn" data-id="${item.id}" title="Delete">${trashIcon}</button>
                   </div>
                 </td>
               </tr>

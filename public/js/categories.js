@@ -38,7 +38,9 @@ const Categories = {
       return `
         <div class="category-card" data-id="${cat.id}">
           ${!isDefault && count === 0 ? `
-            <button class="category-card-delete delete-cat-btn" data-id="${cat.id}" data-name="${this.escapeHtml(cat.name)}" title="Delete Category">✕</button>
+            <button class="category-card-delete delete-cat-btn" data-id="${cat.id}" data-name="${this.escapeHtml(cat.name)}" title="Delete Category" aria-label="Delete">
+              ${window.Icons ? window.Icons.get('close', '', 14) : '✕'}
+            </button>
           ` : ''}
 
           <div class="category-card-icon" style="background-color: ${cat.color || '#6366f1'}">

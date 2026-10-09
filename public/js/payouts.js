@@ -25,17 +25,24 @@ const Payouts = {
 
     if (this.currentPayouts.length === 0) {
       container.innerHTML = `
-        <div class="card" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
-          <span style="font-size: 3rem; display: block; margin-bottom: 8px;">💰</span>
-          <h4 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 4px;">No Payouts Recorded</h4>
-          <p style="font-size: 0.85rem; margin-bottom: 16px;">
-            Add your first payout received from Foodpanda or catering clients to see your true profit margin against grocery expenses!
+        <div class="card empty-state" style="padding: 60px 20px;">
+          <div class="empty-state-icon">
+            ${window.Icons ? window.Icons.get('payouts', '', 32) : '💰'}
+          </div>
+          <h4>No Payouts Recorded</h4>
+          <p>
+            Record payments received from Foodpanda or catering channels to compare against grocery expenses and reveal your net profit margin.
           </p>
-          <button class="btn btn-primary btn-sm" onclick="Payouts.openAddModal()">+ Record Payout</button>
+          <button class="btn btn-primary btn-sm mt-2" onclick="Payouts.openAddModal()">
+            ${window.Icons ? window.Icons.get('plus', '', 16) : '+'} Record First Payout
+          </button>
         </div>
       `;
       return;
     }
+
+    const editIcon = window.Icons ? window.Icons.get('edit', '', 16) : '✏️';
+    const trashIcon = window.Icons ? window.Icons.get('trash', '', 16) : '🗑️';
 
     container.innerHTML = this.currentPayouts.map((p) => {
       const isProfit = p.net_profit >= 0;
@@ -45,21 +52,21 @@ const Payouts = {
 
       return `
         <div class="payout-card" data-id="${p.id}">
-          <div class="payout-header">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
               <span class="payout-cycle-badge">
-                📅 Period: ${App.formatDate(p.period_start)} – ${App.formatDate(p.period_end)}
+                ${window.Icons ? window.Icons.get('calendar', '', 14) : '📅'} Period: ${App.formatDate(p.period_start)} – ${App.formatDate(p.period_end)}
               </span>
-              <h3 style="font-size: 1.1rem; margin-top: 6px; font-weight: 700;">
+              <h3 style="font-size: 1.15rem; margin-top: 8px; font-weight: 800; letter-spacing:-0.02em;">
                 ${this.escapeHtml(p.notes || 'Payout Settlement')}
               </h3>
-              <span class="text-muted text-xs">
+              <span class="text-muted text-xs" style="font-weight:600;">
                 Received on ${App.formatDate(p.payout_date)}
               </span>
             </div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-icon-action edit-payout-btn" data-id="${p.id}" title="Edit Payout">✏️</button>
-              <button class="btn-icon-action delete-action delete-payout-btn" data-id="${p.id}" title="Delete Payout">🗑️</button>
+              <button class="btn-icon-action edit-payout-btn" data-id="${p.id}" title="Edit Payout">${editIcon}</button>
+              <button class="btn-icon-action delete-action delete-payout-btn" data-id="${p.id}" title="Delete Payout">${trashIcon}</button>
             </div>
           </div>
 
@@ -72,7 +79,7 @@ const Payouts = {
             <div class="payout-math-box">
               <label>Kitchen Expenses</label>
               <span class="text-danger">${App.formatCurrency(p.total_expenses)}</span>
-              <div class="text-xs text-muted">(${p.expense_count} items)</div>
+              <div class="text-xs text-muted" style="font-weight:600;">(${p.expense_count} items)</div>
             </div>
             <div class="payout-math-box">
               <label>Net Profit / Loss</label>
@@ -80,7 +87,7 @@ const Payouts = {
                 ${profitSign} ${App.formatCurrency(profitAbs)}
               </span>
               <div class="mt-1">
-                <span class="profit-badge ${profitClass}">
+                <span class="pulse-badge ${profitClass}">
                   ${p.profit_margin_pct}% margin
                 </span>
               </div>
