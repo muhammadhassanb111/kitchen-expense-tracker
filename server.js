@@ -2,7 +2,9 @@ const express = require('express');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const { db, dbPath, clearAllData } = require('./db');
+const { db, dbPath, clearAllData, restoreDatabase } = require('./db');
+const backupService = require('./backup-service');
+backupService.setDb(db);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -74,6 +76,7 @@ app.post('/api/settings', (req, res) => {
   const { currency, kitchenName } = req.body;
   if (currency) setSetting('currency', currency.trim());
   if (kitchenName) setSetting('kitchen_name', kitchenName.trim());
+  backupService.triggerAutoBackup('settings changed');
   res.json({
     success: true,
     currency: getSetting('currency', 'PKR'),
@@ -85,6 +88,7 @@ app.post('/api/settings', (req, res) => {
 app.post('/api/data/clear', (req, res) => {
   try {
     clearAllData();
+    backupService.triggerAutoBackup('all data reset to 0');
     res.json({ success: true, message: 'All expense and payout data cleared successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -128,6 +132,7 @@ app.post('/api/categories', (req, res) => {
     `);
     const result = insert.run(trimmedName, catColor, catIcon);
     const newCat = db.prepare('SELECT * FROM categories WHERE id = ?').get(result.lastInsertRowid);
+    backupService.triggerAutoBackup('category added: ' + trimmedName);
     res.status(201).json(newCat);
   } catch (err) {
     if (err.message && err.message.includes('UNIQUE constraint failed')) {
@@ -151,6 +156,7 @@ app.delete('/api/categories/:id', (req, res) => {
     }
 
     db.prepare('DELETE FROM categories WHERE id = ?').run(id);
+    backupService.triggerAutoBackup('category deleted: ' + cat.name);
     res.json({ success: true, message: `Category "${cat.name}" deleted.` });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -245,6 +251,7 @@ app.post('/api/expenses', (req, res) => {
       WHERE e.id = ?
     `).get(result.lastInsertRowid);
 
+    backupService.triggerAutoBackup(`expense added: ${created.item_name} (Rs. ${created.amount})`);
     res.status(201).json(created);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -291,6 +298,7 @@ app.put('/api/expenses/:id', (req, res) => {
       WHERE e.id = ?
     `).get(id);
 
+    backupService.triggerAutoBackup(`expense updated: ${updated.item_name} (Rs. ${updated.amount})`);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -300,10 +308,11 @@ app.put('/api/expenses/:id', (req, res) => {
 app.delete('/api/expenses/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const existing = db.prepare('SELECT id FROM expenses WHERE id = ?').get(id);
+    const existing = db.prepare('SELECT id, item_name, amount FROM expenses WHERE id = ?').get(id);
     if (!existing) return res.status(404).json({ error: 'Expense not found' });
 
     db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
+    backupService.triggerAutoBackup(`expense deleted: ${existing.item_name} (Rs. ${existing.amount})`);
     res.json({ success: true, message: 'Expense deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -384,6 +393,7 @@ app.post('/api/payouts', (req, res) => {
     const netProfit = created.amount - stats.total_expenses;
     const profitMarginPct = created.amount > 0 ? ((netProfit / created.amount) * 100).toFixed(1) : 0;
 
+    backupService.triggerAutoBackup(`payout added: Rs. ${created.amount} (${created.period_start} to ${created.period_end})`);
     res.status(201).json({
       ...created,
       total_expenses: stats.total_expenses,
@@ -409,7 +419,7 @@ app.put('/api/payouts/:id', (req, res) => {
       return res.status(400).json({ error: 'Valid payout amount is required' });
     }
     if (!period_start || !period_end) {
-      return res.status(400).json({ error: 'Period start date cannot be after end date' });
+      return res.status(400).json({ error: 'Period start and end dates are required' });
     }
     if (period_start > period_end) {
       return res.status(400).json({ error: 'Period start date cannot be after end date' });
@@ -430,6 +440,7 @@ app.put('/api/payouts/:id', (req, res) => {
     const netProfit = updated.amount - stats.total_expenses;
     const profitMarginPct = updated.amount > 0 ? ((netProfit / updated.amount) * 100).toFixed(1) : 0;
 
+    backupService.triggerAutoBackup(`payout updated: Rs. ${updated.amount}`);
     res.json({
       ...updated,
       total_expenses: stats.total_expenses,
@@ -445,10 +456,11 @@ app.put('/api/payouts/:id', (req, res) => {
 app.delete('/api/payouts/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const existing = db.prepare('SELECT id FROM payouts WHERE id = ?').get(id);
+    const existing = db.prepare('SELECT id, amount FROM payouts WHERE id = ?').get(id);
     if (!existing) return res.status(404).json({ error: 'Payout not found' });
 
     db.prepare('DELETE FROM payouts WHERE id = ?').run(id);
+    backupService.triggerAutoBackup(`payout deleted: Rs. ${existing.amount}`);
     res.json({ success: true, message: 'Payout deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -630,10 +642,74 @@ app.get('/api/export/csv', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// DATABASE BACKUP ROUTE
+// DATABASE BACKUP & CLOUD SYNC ROUTES
 // -------------------------------------------------------------
+// Get real-time status of backups and GitHub sync
+app.get('/api/backup/status', (req, res) => {
+  try {
+    res.json(backupService.getStatus());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Trigger immediate sync to GitHub repository
+app.post('/api/backup/sync-now', async (req, res) => {
+  try {
+    await backupService.pushToGit('user manual trigger');
+    res.json({ success: true, ...backupService.getStatus() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Restore database from uploaded .db file
+app.post('/api/backup/restore', express.raw({ type: '*/*', limit: '50mb' }), (req, res) => {
+  try {
+    if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+      return res.status(400).json({ error: 'No database file received.' });
+    }
+    const result = restoreDatabase(req.body);
+    backupService.checkpointWal();
+    backupService.createLocalBackup('after_restore');
+    backupService.triggerAutoBackup('database restored from file upload');
+    res.json({
+      success: true,
+      message: 'Database successfully restored!',
+      expenses: result.expenses
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Restore failed: ' + err.message });
+  }
+});
+
+// Restore database from local snapshot file in backups/
+app.post('/api/backup/restore-snapshot', (req, res) => {
+  try {
+    const { filename } = req.body;
+    if (!filename) return res.status(400).json({ error: 'Filename is required' });
+    const targetFile = path.join(backupService.backupsDir, path.basename(filename));
+    if (!fs.existsSync(targetFile)) {
+      return res.status(404).json({ error: 'Snapshot file not found' });
+    }
+    const result = restoreDatabase(targetFile);
+    backupService.checkpointWal();
+    backupService.createLocalBackup('after_restore');
+    backupService.triggerAutoBackup(`database restored from snapshot ${filename}`);
+    res.json({
+      success: true,
+      message: `Database restored from ${filename}`,
+      expenses: result.expenses
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Snapshot restore failed: ' + err.message });
+  }
+});
+
+// Download standalone database copy
 app.get('/api/backup/db', async (req, res) => {
   try {
+    backupService.checkpointWal();
     const timestamp = new Date().toISOString().split('T')[0];
     const backupFileName = `kitchen_backup_${timestamp}.db`;
     const tempBackupPath = path.join(os.tmpdir(), backupFileName);

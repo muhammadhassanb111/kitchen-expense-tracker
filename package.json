@@ -4,7 +4,8 @@
   "description": "Mobile-first Kitchen Expense Tracker for cloud kitchens",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "update": "node safe-update.js"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

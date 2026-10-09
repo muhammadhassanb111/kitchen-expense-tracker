@@ -244,6 +244,62 @@ const App = {
 
   renderSettingsView() {
     this.loadSettings();
+    this.loadBackupStatus();
+  },
+
+  async loadBackupStatus() {
+    try {
+      const data = await this.apiFetch('/api/backup/status');
+      const dot = document.getElementById('cloudStatusDot');
+      const title = document.getElementById('cloudBackupTitle');
+      const subtitle = document.getElementById('cloudBackupSubtitle');
+      const snapshotsList = document.getElementById('localSnapshotsContainer');
+
+      if (!dot || !title || !subtitle) return;
+
+      if (data.isSyncing) {
+        dot.style.background = 'var(--brand)';
+        dot.style.boxShadow = '0 0 10px rgba(99, 102, 241, 0.6)';
+        title.textContent = 'Syncing with GitHub...';
+        subtitle.textContent = 'Sending latest database changes to remote repository';
+      } else if (data.lastSyncStatus === 'success') {
+        dot.style.background = 'var(--inflow)';
+        dot.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.6)';
+        title.textContent = 'Cloud Auto-Backup Active';
+        const timeFormatted = data.lastSyncTime ? new Date(data.lastSyncTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Just now';
+        subtitle.textContent = `GitHub Synced at ${timeFormatted} • ${data.stats.expenses} expenses, ${data.stats.payouts} payouts safely stored`;
+      } else if (data.lastSyncStatus === 'offline') {
+        dot.style.background = 'var(--accent-warn, #f59e0b)';
+        dot.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.6)';
+        title.textContent = 'Offline Mode (Local Backups Safe)';
+        subtitle.textContent = 'All changes saved in SQLite and local disk snapshots. Will sync to GitHub when reconnected.';
+      } else {
+        dot.style.background = 'var(--inflow)';
+        title.textContent = 'Auto-Backup & Local Protection Active';
+        subtitle.textContent = data.lastSyncMessage || 'Every record is instantly saved.';
+      }
+
+      if (snapshotsList && data.localBackups) {
+        if (data.localBackups.length === 0) {
+          snapshotsList.innerHTML = '<span class="text-muted text-xs">No snapshots created yet. Add an expense to trigger the first backup!</span>';
+        } else {
+          snapshotsList.innerHTML = data.localBackups.slice(0, 5).map(snap => {
+            const dateStr = new Date(snap.modified).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:8px 12px; border-radius:var(--radius-xs); border:1px solid var(--border-subtle);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:0.82rem; font-weight:600; color:var(--text-main); font-family:monospace;">${snap.name}</span>
+                  <span class="text-muted text-xs">(${snap.sizeKb} KB • ${dateStr})</span>
+                </div>
+                <button class="btn btn-xs btn-outline restore-snapshot-btn" data-file="${snap.name}">Restore</button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load backup status:', e);
+    }
   },
 
   async loadCategories() {
@@ -503,6 +559,82 @@ const App = {
     document.getElementById('downloadDbBtn').addEventListener('click', (e) => {
       e.preventDefault();
       window.location.href = '/api/backup/db';
+    });
+
+    // Manual GitHub Cloud Sync Button
+    const syncGitBtn = document.getElementById('syncGitNowBtn');
+    const syncGitText = document.getElementById('syncGitBtnText');
+    if (syncGitBtn) {
+      syncGitBtn.addEventListener('click', async () => {
+        syncGitBtn.disabled = true;
+        if (syncGitText) syncGitText.textContent = 'Syncing...';
+        try {
+          await this.apiFetch('/api/backup/sync-now', { method: 'POST' });
+          this.showToast('Database backed up to GitHub!', 'success');
+          await this.loadBackupStatus();
+        } catch (err) {
+          this.showToast('Git sync notice: ' + err.message, 'error');
+        } finally {
+          syncGitBtn.disabled = false;
+          if (syncGitText) syncGitText.textContent = 'Sync GitHub Now';
+        }
+      });
+    }
+
+    // Database File Restore Trigger & Upload
+    const restoreTrigger = document.getElementById('restoreDbTriggerBtn');
+    const restoreInput = document.getElementById('restoreDbFileInput');
+    if (restoreTrigger && restoreInput) {
+      restoreTrigger.addEventListener('click', () => restoreInput.click());
+      restoreInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!confirm(`Restore from backup file "${file.name}"?\n\nThis will replace the active database with the data in this backup file.`)) {
+          restoreInput.value = '';
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/backup/restore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file
+          });
+          const res = await response.json();
+          if (!response.ok) throw new Error(res.error || 'Restore failed');
+          this.showToast(res.message || 'Database restored successfully!', 'success');
+          await this.loadCategories();
+          this.refreshCurrentTab();
+          await this.loadBackupStatus();
+        } catch (err) {
+          this.showToast(err.message, 'error');
+        } finally {
+          restoreInput.value = '';
+        }
+      });
+    }
+
+    // Restore from local snapshot button click
+    document.addEventListener('click', async (e) => {
+      const snapBtn = e.target.closest('.restore-snapshot-btn');
+      if (snapBtn) {
+        const filename = snapBtn.dataset.file;
+        if (!confirm(`Restore from snapshot "${filename}"?\n\nThis will safely roll back the database to this point in time.`)) return;
+
+        try {
+          const res = await this.apiFetch('/api/backup/restore-snapshot', {
+            method: 'POST',
+            body: { filename }
+          });
+          this.showToast(res.message || 'Snapshot restored successfully!', 'success');
+          await this.loadCategories();
+          this.refreshCurrentTab();
+          await this.loadBackupStatus();
+        } catch (err) {
+          this.showToast(err.message, 'error');
+        }
+      }
     });
   }
 };

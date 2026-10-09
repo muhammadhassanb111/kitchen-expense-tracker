@@ -380,25 +380,59 @@
                 </div>
               </div>
 
-              <!-- Data Management Card -->
+              <!-- Data Management & Cloud Backup Card -->
               <div class="card">
                 <div class="card-header">
                   <h3>
-                    <span data-icon="database" data-size="18"></span>
-                    <span>Data Backup & Protection</span>
+                    <span data-icon="shieldCheck" data-size="18"></span>
+                    <span>Data Security & GitHub Cloud Backup</span>
                   </h3>
                 </div>
                 <div class="card-body">
-                  <p class="text-muted text-sm mb-3">All records are stored locally in SQLite (`data/kitchen.db`). Download backups anytime:</p>
-                  <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                  <!-- Live Cloud Backup Status Banner -->
+                  <div id="cloudBackupBanner" style="display:flex; justify-content:space-between; align-items:center; background:rgba(16, 185, 129, 0.08); border:1px solid rgba(16, 185, 129, 0.25); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:16px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                      <div id="cloudStatusDot" style="width:12px; height:12px; border-radius:50%; background:var(--inflow); box-shadow:0 0 10px rgba(16,185,129,0.5);"></div>
+                      <div>
+                        <div id="cloudBackupTitle" style="font-size:0.92rem; font-weight:700; color:var(--text-main);">Cloud Auto-Backup Active</div>
+                        <div id="cloudBackupSubtitle" class="text-muted text-xs">Instantly saving every change to local SQLite & GitHub</div>
+                      </div>
+                    </div>
+                    <button id="syncGitNowBtn" class="btn btn-sm btn-primary" style="display:flex; align-items:center; gap:6px;">
+                      <span data-icon="refresh" data-size="14"></span>
+                      <span id="syncGitBtnText">Sync GitHub Now</span>
+                    </button>
+                  </div>
+
+                  <p class="text-muted text-sm mb-3">
+                    Every transaction you or your brother record is immediately written to SQLite with zero-delay checkpointing, archived locally in <code>backups/</code>, and pushed to your GitHub repository.
+                  </p>
+
+                  <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
                     <a id="downloadDbBtn" href="/api/backup/db" class="btn btn-outline" download>
                       <span data-icon="database" data-size="16"></span>
-                      <span>Download Database Backup (.db)</span>
+                      <span>Download Database (.db)</span>
                     </a>
                     <button id="downloadAllCsvBtn" class="btn btn-outline">
                       <span data-icon="download" data-size="16"></span>
-                      <span>Export All Records as CSV (Excel)</span>
+                      <span>Export CSV (Excel)</span>
                     </button>
+                    <button id="restoreDbTriggerBtn" class="btn btn-outline">
+                      <span data-icon="upload" data-size="16"></span>
+                      <span>Restore from .db File</span>
+                    </button>
+                    <input type="file" id="restoreDbFileInput" accept=".db" style="display:none;">
+                  </div>
+
+                  <!-- Local Rolling Snapshots Section -->
+                  <div style="background:var(--bg-chip); border-radius:var(--radius-sm); border:1px solid var(--border-subtle); padding:14px; margin-bottom:16px;">
+                    <h4 style="font-size:0.88rem; font-weight:700; color:var(--text-main); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                      <span data-icon="database" data-size="14"></span>
+                      <span>Recent Automatic Local Snapshots</span>
+                    </h4>
+                    <div id="localSnapshotsContainer" style="display:flex; flex-direction:column; gap:6px;">
+                      <span class="text-muted text-xs">Loading local snapshots...</span>
+                    </div>
                   </div>
 
                   <hr style="border:none; border-top:1px solid var(--border-subtle); margin:20px 0;">
