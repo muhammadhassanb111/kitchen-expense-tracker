@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kitchen Expense Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <span class="app-icon">🍳</span>
+        <div>
+          <h1 class="app-title" id="kitchenTitleDisplay">Cloud Kitchen</h1>
+          <span class="app-subtitle">Expense & Payout Tracker</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Desktop Navigation Bar (hidden on small mobile, shown on tablet/desktop) -->
+    <nav class="desktop-nav">
+      <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
+      <button class="nav-btn" data-tab="expenses">🧾 Expenses</button>
+      <button class="nav-btn" data-tab="payouts">💰 Payouts & P&L</button>
+      <button class="nav-btn" data-tab="categories">🏷️ Categories</button>
+      <button class="nav-btn" data-tab="settings">⚙️ Settings</button>
+    </nav>
+
+    <!-- Global Period Filter Bar (shown on Dashboard & Expenses) -->
+    <section class="filter-bar" id="globalFilterBar">
+      <div class="period-pills">
+        <button class="pill-btn" data-period="today">Today</button>
+        <button class="pill-btn" data-period="week">This Week</button>
+        <button class="pill-btn active" data-period="month">This Month</button>
+        <button class="pill-btn" data-period="custom">Custom 📅</button>
+      </div>
+
+      <div class="custom-date-row" id="customDateRow" style="display: none;">
+        <div class="date-input-group">
+          <label>From:</label>
+          <input type="date" id="filterStartDate">
+        </div>
+        <div class="date-input-group">
+          <label>To:</label>
+          <input type="date" id="filterEndDate">
+        </div>
+        <button id="applyCustomDatesBtn" class="btn btn-sm btn-primary">Apply</button>
+      </div>
+
+      <div class="active-period-label" id="activePeriodLabel">
+        <!-- Shows: e.g. Oct 1, 2026 - Oct 31, 2026 -->
+      </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- ================= TAB: DASHBOARD ================= -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <!-- Metric Cards Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-icon">💸</span>
+            <div class="stat-info">
+              <span class="stat-label">Total Spent</span>
+              <h2 class="stat-value text-danger" id="dashTotalSpent">PKR 0</h2>
+              <span class="stat-sub" id="dashExpenseCount">0 items recorded</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon">💰</span>
+            <div class="stat-info">
+              <span class="stat-label">Payouts Received</span>
+              <h2 class="stat-value text-success" id="dashTotalPayouts">PKR 0</h2>
+              <span class="stat-sub">For this cycle</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon" id="dashNetIcon">📈</span>
+            <div class="stat-info">
+              <span class="stat-label">Net Profit / Loss</span>
+              <h2 class="stat-value" id="dashNetProfit">PKR 0</h2>
+              <span class="stat-sub" id="dashProfitMargin">Payout minus expenses</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon">📅</span>
+            <div class="stat-info">
+              <span class="stat-label">Daily Average</span>
+              <h2 class="stat-value text-primary" id="dashDailyAvg">PKR 0</h2>
+              <span class="stat-sub">Per active shopping day</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Container -->
+        <div class="charts-row">
+          <!-- Category Breakdown Card -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Category Breakdown</h3>
+              <span class="badge" id="categoryCountBadge">0 categories</span>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrapper">
+                <div id="donutChartContainer" class="donut-container">
+                  <!-- SVG Donut Chart injected here -->
+                </div>
+              </div>
+              <div id="categoryLegend" class="category-legend">
+                <!-- Legend items injected here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily Spending Trend Card -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Daily Spending Trend</h3>
+              <span class="text-muted text-sm">Expenses per day</span>
+            </div>
+            <div class="card-body">
+              <div id="trendChartContainer" class="trend-container">
+                <!-- SVG Trend Chart injected here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Purchases Quick View -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h3>Recent Expenses</h3>
+            <button class="btn btn-sm btn-outline" id="viewAllExpensesBtn">View All</button>
+          </div>
+          <div class="card-body p-0">
+            <div id="dashRecentList" class="expense-list compact">
+              <!-- Rendered items -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: EXPENSES ================= -->
+      <section id="tab-expenses" class="tab-pane">
+        <!-- Search and Sub-filters -->
+        <div class="expense-toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="expenseSearchInput" placeholder="Search item, vendor, or note...">
+            <button id="clearSearchBtn" class="clear-btn" style="display:none;">✕</button>
+          </div>
+
+          <div class="category-filter-select">
+            <select id="expenseCategoryFilter">
+              <option value="all">All Categories</option>
+              <!-- Filled dynamically -->
+            </select>
+          </div>
+
+          <div class="toolbar-actions">
+            <button id="exportCsvBtn" class="btn btn-outline btn-sm">
+              📥 Export CSV
+            </button>
+            <button id="addExpenseHeaderBtn" class="btn btn-primary btn-sm desktop-only">
+              + Add Expense
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Bar of Filtered Expenses -->
+        <div class="expense-summary-bar">
+          <div>
+            Showing <strong id="filteredCount">0</strong> expenses
+          </div>
+          <div>
+            Total: <strong class="text-danger" id="filteredTotal">PKR 0</strong>
+          </div>
+        </div>
+
+        <!-- Expenses List View (Cards on mobile, table on desktop) -->
+        <div id="expensesContainer" class="expenses-wrapper">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ================= TAB: PAYOUTS & PROFIT/LOSS ================= -->
+      <section id="tab-payouts" class="tab-pane">
+        <div class="section-header-row">
+          <div>
+            <h2>Payout & Profit Comparison</h2>
+            <p class="section-desc">Track weekly / bi-weekly payments received from delivery platforms or clients, compared directly against kitchen grocery costs for that exact date period.</p>
+          </div>
+          <button id="openAddPayoutModalBtn" class="btn btn-primary">
+            + Record Payout
+          </button>
+        </div>
+
+        <div id="payoutsListContainer" class="payouts-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ================= TAB: CATEGORIES ================= -->
+      <section id="tab-categories" class="tab-pane">
+        <div class="section-header-row">
+          <div>
+            <h2>Expense Categories</h2>
+            <p class="section-desc">Manage categories used to organize grocery and kitchen purchases.</p>
+          </div>
+          <button id="openAddCategoryModalBtn" class="btn btn-primary">
+            + New Category
+          </button>
+        </div>
+
+        <div id="categoriesListContainer" class="categories-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ================= TAB: SETTINGS & BACKUP ================= -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="settings-container">
+          <!-- Network / Wi-Fi Access Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3>📱 Connect from Phone (Same Wi-Fi)</h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted mb-2">Open your phone's browser and visit this address while connected to the same Wi-Fi network:</p>
+              <div id="wifiAddressesContainer" class="ip-boxes">
+                <div class="ip-box">
+                  <code id="wifiAddressCode">http://localhost:3000</code>
+                  <button id="copyWifiBtn" class="btn btn-sm btn-outline">Copy</button>
+                </div>
+              </div>
+              <p class="hint-text mt-2">💡 Tip: Bookmark it or tap <strong>"Add to Home Screen"</strong> on your phone browser for a full-screen app experience!</p>
+            </div>
+          </div>
+
+          <!-- Kitchen & Currency Settings -->
+          <div class="card mt-3">
+            <div class="card-header">
+              <h3>🏪 Kitchen Preferences</h3>
+            </div>
+            <div class="card-body">
+              <form id="kitchenSettingsForm">
+                <div class="form-group">
+                  <label for="kitchenNameInput">Kitchen Name</label>
+                  <input type="text" id="kitchenNameInput" value="Cloud Kitchen" required>
+                </div>
+                <div class="form-group">
+                  <label for="currencySelect">Currency Symbol</label>
+                  <select id="currencySelect">
+                    <option value="PKR">PKR (Rs.)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="AED">AED (د.إ)</option>
+                    <option value="SAR">SAR (﷼)</option>
+                    <option value="INR">INR (₹)</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Preferences</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Data Management -->
+          <div class="card mt-3">
+            <div class="card-header">
+              <h3>🗑️ Clear Data</h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted mb-2">Want to wipe all recorded expenses and payouts to start completely fresh?</p>
+              <button id="clearAllDataBtn" class="btn btn-outline btn-sm text-danger" style="border-color: var(--danger);">
+                ⚠️ Clear All Expenses & Payouts
+              </button>
+            </div>
+          </div>
+
+          <!-- Data Backup & Export -->
+          <div class="card mt-3">
+            <div class="card-header">
+              <h3>💾 Backup & Data Protection</h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted mb-3">All records are stored locally in SQLite (`data/kitchen.db`). Download backups anytime:</p>
+              <div class="backup-actions">
+                <a id="downloadDbBtn" href="/api/backup/db" class="btn btn-outline" download>
+                  📦 Download Database Backup (.db)
+                </a>
+                <button id="downloadAllCsvBtn" class="btn btn-outline">
+                  📊 Export All Records as CSV (Excel)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Action Button (FAB) for Mobile Quick Add -->
+    <button id="fabAddBtn" class="fab-btn" aria-label="Add Expense" title="Add Expense">
+      <span class="fab-icon">+</span>
+      <span class="fab-label">Add Expense</span>
+    </button>
+
+    <!-- Bottom Navigation Bar (Mobile) -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-item active" data-tab="dashboard">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="expenses">
+        <span class="nav-icon">🧾</span>
+        <span class="nav-label">Expenses</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="payouts">
+        <span class="nav-icon">💰</span>
+        <span class="nav-label">Payouts</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="categories">
+        <span class="nav-icon">🏷️</span>
+        <span class="nav-label">Categories</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </button>
+    </nav>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Modal: Add / Edit Expense -->
+    <div id="expenseModal" class="modal-overlay">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="expenseModalTitle">Add Expense</h3>
+          <button class="modal-close-btn" data-close-modal="expenseModal">✕</button>
+        </div>
+        <form id="expenseForm">
+          <input type="hidden" id="expenseIdInput">
+
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="expDateInput">Date <span class="required">*</span></label>
+                <input type="date" id="expDateInput" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="expCategorySelect">Category <span class="required">*</span></label>
+                <select id="expCategorySelect" required>
+                  <!-- Populated from categories -->
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="position: relative;">
+              <label for="expItemInput">Item Name <span class="required">*</span></label>
+              <div class="combobox-wrapper">
+                <input type="text" id="expItemInput" placeholder="Type or pick an item name..." required autocomplete="off">
+                <button type="button" id="toggleItemDropdownBtn" class="combobox-toggle-btn" title="Show all suggestions for this category" aria-label="Toggle suggestions">
+                  ▼
+                </button>
+                <div id="itemDropdownMenu" class="combobox-menu" style="display:none;"></div>
+              </div>
+              <div class="category-suggestions-container">
+                <div class="suggestions-header">
+                  <span id="suggestionsCategoryLabel">Suggestions:</span>
+                </div>
+                <div id="quickItemChips" class="quick-chips-row"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="expAmountInput">Amount (<span class="currency-label">PKR</span>) <span class="required">*</span></label>
+              <input type="number" id="expAmountInput" step="any" min="0.01" placeholder="0.00" class="amount-large-input" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="expQtyInput">Quantity <span class="text-muted">(Optional)</span></label>
+                <input type="number" id="expQtyInput" step="any" min="0" placeholder="e.g. 5">
+              </div>
+              <div class="form-group flex-1">
+                <label for="expUnitSelect">Unit <span class="text-muted">(Optional)</span></label>
+                <select id="expUnitSelect">
+                  <option value="">No Unit</option>
+                  <option value="kg">kg (Kilogram)</option>
+                  <option value="litre">litre (L)</option>
+                  <option value="pcs">pcs (Pieces)</option>
+                  <option value="packet">packet</option>
+                  <option value="dozen">dozen</option>
+                  <option value="box">box / carton</option>
+                  <option value="gm">gram (g)</option>
+                  <option value="ml">millilitre (ml)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="expVendorInput">Vendor / Shop <span class="text-muted">(Optional)</span></label>
+              <input type="text" id="expVendorInput" placeholder="e.g. Sabzi Mandi, Tariq Poultry, Metro">
+            </div>
+
+            <div class="form-group">
+              <label for="expNotesInput">Note <span class="text-muted">(Optional)</span></label>
+              <textarea id="expNotesInput" rows="2" placeholder="e.g. Price went up Rs. 50/kg, delivery included"></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" data-close-modal="expenseModal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveExpenseBtn">Save Expense</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Add / Edit Payout -->
+    <div id="payoutModal" class="modal-overlay">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="payoutModalTitle">Record Payout</h3>
+          <button class="modal-close-btn" data-close-modal="payoutModal">✕</button>
+        </div>
+        <form id="payoutForm">
+          <input type="hidden" id="payoutIdInput">
+
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="payoutDateInput">Payout Date <span class="required">*</span></label>
+              <input type="date" id="payoutDateInput" required>
+            </div>
+
+            <div class="form-group">
+              <label for="payoutAmountInput">Payout Amount (<span class="currency-label">PKR</span>) <span class="required">*</span></label>
+              <input type="number" id="payoutAmountInput" step="any" min="0" placeholder="0.00" class="amount-large-input" required>
+            </div>
+
+            <div class="form-group">
+              <label>Period Covered (1-2 Weeks) <span class="required">*</span></label>
+              <p class="text-muted text-xs mb-1">Kitchen expenses in this date window will be automatically subtracted to show your net profit.</p>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label for="payoutPeriodStart" class="text-xs">Start Date</label>
+                  <input type="date" id="payoutPeriodStart" required>
+                </div>
+                <div class="form-group flex-1">
+                  <label for="payoutPeriodEnd" class="text-xs">End Date</label>
+                  <input type="date" id="payoutPeriodEnd" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="payoutNotesInput">Channel / Note <span class="text-muted">(Optional)</span></label>
+              <input type="text" id="payoutNotesInput" placeholder="e.g. Foodpanda Week 42, Direct catering payout">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" data-close-modal="payoutModal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="savePayoutBtn">Save Payout</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Add New Category -->
+    <div id="categoryModal" class="modal-overlay">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Add New Category</h3>
+          <button class="modal-close-btn" data-close-modal="categoryModal">✕</button>
+        </div>
+        <form id="categoryForm">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="catNameInput">Category Name <span class="required">*</span></label>
+              <input type="text" id="catNameInput" placeholder="e.g. Cleaning Supplies, Beverages" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="catColorInput">Color Badge</label>
+                <div class="color-picker-row">
+                  <input type="color" id="catColorInput" value="#10b981">
+                  <span class="color-preview" id="colorPreviewBox" style="background:#10b981;"></span>
+                </div>
+              </div>
+              <div class="form-group flex-1">
+                <label for="catIconInput">Icon / Emoji</label>
+                <input type="text" id="catIconInput" value="🏷️" maxlength="4" style="text-align: center; font-size: 1.25rem;">
+              </div>
+            </div>
+
+            <!-- Quick emoji picker -->
+            <div class="emoji-palette">
+              <span class="emoji-chip" data-emoji="🥬">🥬</span>
+              <span class="emoji-chip" data-emoji="🥩">🥩</span>
+              <span class="emoji-chip" data-emoji="🧂">🧂</span>
+              <span class="emoji-chip" data-emoji="🍞">🍞</span>
+              <span class="emoji-chip" data-emoji="🥤">🥤</span>
+              <span class="emoji-chip" data-emoji="🧹">🧹</span>
+              <span class="emoji-chip" data-emoji="🛵">🛵</span>
+              <span class="emoji-chip" data-emoji="💡">💡</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" data-close-modal="categoryModal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Category</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Delete Confirmation -->
+    <div id="deleteConfirmModal" class="modal-overlay">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-header">
+          <h3>Confirm Delete</h3>
+          <button class="modal-close-btn" data-close-modal="deleteConfirmModal">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteConfirmText">Are you sure you want to delete this record?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="deleteConfirmModal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteActionBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/expenses.js"></script>
+  <script src="js/payouts.js"></script>
+  <script src="js/categories.js"></script>
+</body>
+</html>
