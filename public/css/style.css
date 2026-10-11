@@ -507,7 +507,7 @@ body {
    =================================================================== */
 .main-content {
   flex: 1;
-  padding: 16px 16px calc(var(--bottom-nav-height) + 14px) 16px;
+  padding: 16px 16px calc(var(--bottom-nav-height) + 80px) 16px;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
@@ -1433,30 +1433,28 @@ body {
   bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 16px);
   right: 18px;
   z-index: 45;
-  background: linear-gradient(135deg, var(--brand), #4f46e5);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), #4338ca);
   color: #fff;
   border: none;
-  border-radius: var(--radius-full);
-  padding: 12px 22px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: var(--shadow-fab);
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.42);
   cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 700;
-  font-family: inherit;
-  animation: fabPulse 4s infinite;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fab-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.55);
 }
 
 .fab-btn:active {
-  transform: scale(0.92) rotate(45deg);
-}
-
-@keyframes fabPulse {
-  0%, 100% { box-shadow: 0 10px 25px -4px rgba(99, 102, 241, 0.5); }
-  50% { box-shadow: 0 12px 32px 0 rgba(99, 102, 241, 0.75); }
+  transform: scale(0.92);
 }
 
 .bottom-nav {

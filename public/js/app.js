@@ -269,15 +269,15 @@ const App = {
     const activePane = document.getElementById(`tab-${tabName}`);
     if (activePane) activePane.classList.add('active');
 
-    // Filter bar & Mobile FAB visibility (only on Dashboard & Expenses)
+    // Filter bar & Mobile FAB visibility (strictly on Dashboard & Expenses)
     const filterBar = document.getElementById('globalFilterBar');
     const fabBtn = document.getElementById('fabAddBtn');
-    if (tabName === 'dashboard' || tabName === 'expenses') {
-      if (filterBar) filterBar.style.display = 'flex';
-      if (fabBtn) fabBtn.style.display = 'flex';
-    } else {
-      if (filterBar) filterBar.style.display = 'none';
-      if (fabBtn) fabBtn.style.display = 'none';
+    const isMainTab = (tabName === 'dashboard' || tabName === 'expenses');
+    if (filterBar) filterBar.style.display = isMainTab ? 'flex' : 'none';
+    if (fabBtn) {
+      fabBtn.style.display = isMainTab ? 'flex' : 'none';
+      fabBtn.style.visibility = isMainTab ? 'visible' : 'hidden';
+      fabBtn.style.pointerEvents = isMainTab ? 'auto' : 'none';
     }
 
     // Update browser history so Back button navigates between tabs without triggering downloads
