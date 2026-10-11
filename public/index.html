@@ -482,14 +482,17 @@
                     </div>
                   </div>
 
-                  <hr style="border:none; border-top:1px solid var(--border-subtle); margin:20px 0;">
+                  <hr style="border:none; border-top:1px solid var(--border-subtle); margin:24px 0 16px 0;">
 
-                  <div>
-                    <h4 style="font-size:0.95rem; font-weight:700; color:var(--outflow); margin-bottom:4px;">Reset Database</h4>
-                    <p class="text-muted text-xs mb-2">Want to wipe all recorded expenses and payouts to start completely fresh?</p>
-                    <button id="clearAllDataBtn" class="btn btn-outline btn-sm text-danger" style="border-color:var(--outflow);">
+                  <div style="background:rgba(244, 63, 94, 0.05); border:1px solid rgba(244, 63, 94, 0.25); border-radius:var(--radius-sm); padding:16px; margin-bottom:24px;">
+                    <h4 style="font-size:0.92rem; font-weight:700; color:var(--outflow); margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                      <span data-icon="trash" data-size="16"></span>
+                      <span>Danger Zone: Reset Database</span>
+                    </h4>
+                    <p class="text-muted text-xs mb-3">Permanently delete all recorded grocery expenses and payouts to start completely fresh. Categories and settings will be preserved.</p>
+                    <button id="clearAllDataBtn" class="btn btn-outline btn-sm text-danger" style="border-color:var(--outflow); width:100%; justify-content:center; padding:10px 16px; font-weight:700;">
                       <span data-icon="trash" data-size="14"></span>
-                      <span>Clear All Expenses & Payouts</span>
+                      <span>Wipe All Expenses & Payouts</span>
                     </button>
                   </div>
                 </div>

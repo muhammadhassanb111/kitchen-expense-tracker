@@ -507,7 +507,7 @@ body {
    =================================================================== */
 .main-content {
   flex: 1;
-  padding: 20px;
+  padding: 16px 16px calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 90px) 16px;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
@@ -1099,6 +1099,73 @@ body {
   align-items: flex-start;
   gap: 16px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .section-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .section-header-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Local Rolling Snapshot Cards */
+.snapshot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.snapshot-item:hover {
+  border-color: var(--border-glass);
+  background: var(--bg-card-hover);
+}
+
+.snapshot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.snapshot-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snapshot-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.snapshot-size-badge {
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-light);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.725rem;
 }
 
 .section-header-row h2 {
@@ -1729,6 +1796,10 @@ body {
 @media (min-width: 900px) {
   body {
     padding-bottom: 0;
+  }
+
+  .main-content {
+    padding: 24px 24px 48px 24px;
   }
 
   .top-header {

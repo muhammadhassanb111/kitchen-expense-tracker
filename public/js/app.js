@@ -269,12 +269,15 @@ const App = {
     const activePane = document.getElementById(`tab-${tabName}`);
     if (activePane) activePane.classList.add('active');
 
-    // Filter bar visibility (only on Dashboard & Expenses)
+    // Filter bar & Mobile FAB visibility (only on Dashboard & Expenses)
     const filterBar = document.getElementById('globalFilterBar');
+    const fabBtn = document.getElementById('fabAddBtn');
     if (tabName === 'dashboard' || tabName === 'expenses') {
-      filterBar.style.display = 'flex';
+      if (filterBar) filterBar.style.display = 'flex';
+      if (fabBtn) fabBtn.style.display = 'flex';
     } else {
-      filterBar.style.display = 'none';
+      if (filterBar) filterBar.style.display = 'none';
+      if (fabBtn) fabBtn.style.display = 'none';
     }
 
     // Update browser history so Back button navigates between tabs without triggering downloads
@@ -491,14 +494,24 @@ const App = {
           snapshotsList.innerHTML = '<span class="text-muted text-xs">No snapshots created yet. Add an expense to trigger the first backup!</span>';
         } else {
           snapshotsList.innerHTML = data.localBackups.slice(0, 5).map(snap => {
-            const dateStr = new Date(snap.modified).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+            const dateStr = new Date(snap.modified).toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+            const sizeVal = Number(snap.sizeKb) || 0;
+            const sizeDisplay = sizeVal >= 1024 
+              ? `${(sizeVal / 1024).toFixed(1)} MB` 
+              : `${sizeVal} KB`;
             return `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:8px 12px; border-radius:var(--radius-xs); border:1px solid var(--border-subtle);">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:0.82rem; font-weight:600; color:var(--text-main); font-family:monospace;">${snap.name}</span>
-                  <span class="text-muted text-xs">(${snap.sizeKb} KB • ${dateStr})</span>
+              <div class="snapshot-item">
+                <div class="snapshot-info">
+                  <div class="snapshot-name" title="${this.escapeHtml(snap.name)}">
+                    ${this.escapeHtml(snap.name)}
+                  </div>
+                  <div class="snapshot-meta">
+                    <span class="snapshot-size-badge">${sizeDisplay}</span>
+                    <span>•</span>
+                    <span>${dateStr}</span>
+                  </div>
                 </div>
-                <button class="btn btn-xs btn-outline restore-snapshot-btn" data-file="${snap.name}">Restore</button>
+                <button class="btn btn-sm btn-outline restore-snapshot-btn" data-file="${this.escapeHtml(snap.name)}">Restore</button>
               </div>
             `;
           }).join('');
@@ -507,6 +520,15 @@ const App = {
     } catch (e) {
       console.warn('Could not load backup status:', e);
     }
+  },
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   },
 
   async loadCategories() {
