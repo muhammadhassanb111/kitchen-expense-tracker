@@ -22,6 +22,7 @@ const App = {
     this.initHistoryNavigation();
     if (window.Icons) window.Icons.replacePlaceholders();
 
+    await this.checkAuthStatus();
     await this.loadSettings();
     await this.loadCategories();
     this.refreshCurrentTab();
@@ -81,10 +82,15 @@ const App = {
   },
 
   // ------------------------------------------
+  // ------------------------------------------
   // API Fetch Helper
   // ------------------------------------------
   async apiFetch(url, options = {}) {
     options.headers = options.headers || {};
+    const authToken = sessionStorage.getItem('kitchen_auth_token');
+    if (authToken) {
+      options.headers['x-auth-token'] = authToken;
+    }
     if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
       options.headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(options.body);
@@ -92,6 +98,13 @@ const App = {
 
     try {
       const res = await fetch(url, options);
+      if (res.status === 401) {
+        const errorData = await res.json().catch(() => ({}));
+        if (errorData.pinRequired) {
+          this.showPinLock();
+        }
+        throw new Error(errorData.error || 'Authentication required');
+      }
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `Request failed with status ${res.status}`);
@@ -101,6 +114,146 @@ const App = {
       console.error('API Error:', err);
       throw err;
     }
+  },
+
+  // ------------------------------------------
+  // PIN Security & Screen Lock System
+  // ------------------------------------------
+  pinState: {
+    entered: '',
+    required: true,
+    authenticated: false
+  },
+
+  async checkAuthStatus() {
+    try {
+      const token = sessionStorage.getItem('kitchen_auth_token');
+      const headers = token ? { 'x-auth-token': token } : {};
+      const res = await fetch('/api/auth/status', { headers });
+      const status = await res.json();
+
+      this.pinState.required = status.pinRequired;
+      this.pinState.authenticated = status.authenticated;
+
+      if (status.pinRequired && !status.authenticated) {
+        this.showPinLock();
+      } else {
+        this.hidePinLock();
+      }
+    } catch (e) {
+      console.warn('Auth status check notice:', e.message);
+    }
+  },
+
+  showPinLock() {
+    const modal = document.getElementById('pinLockModal');
+    if (!modal) return;
+    this.pinState.entered = '';
+    this.updatePinDots();
+    const errorEl = document.getElementById('pinErrorMessage');
+    if (errorEl) {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+    modal.style.display = 'flex';
+    const hiddenInput = document.getElementById('pinHiddenInput');
+    if (hiddenInput) {
+      hiddenInput.value = '';
+      hiddenInput.focus();
+    }
+  },
+
+  hidePinLock() {
+    const modal = document.getElementById('pinLockModal');
+    if (modal) modal.style.display = 'none';
+    this.pinState.entered = '';
+  },
+
+  updatePinDots() {
+    const dots = document.querySelectorAll('.pin-dot');
+    const len = this.pinState.entered.length;
+    dots.forEach((dot, idx) => {
+      dot.classList.toggle('filled', idx < len);
+    });
+  },
+
+  handlePinDigit(digit) {
+    if (this.pinState.entered.length >= 6) return;
+    this.pinState.entered += String(digit);
+    this.updatePinDots();
+
+    // Auto-verify on 4 digits
+    if (this.pinState.entered.length === 4) {
+      this.submitPin();
+    }
+  },
+
+  handlePinBackspace() {
+    if (this.pinState.entered.length > 0) {
+      this.pinState.entered = this.pinState.entered.slice(0, -1);
+      this.updatePinDots();
+    }
+  },
+
+  handlePinClear() {
+    this.pinState.entered = '';
+    this.updatePinDots();
+  },
+
+  async submitPin() {
+    const pin = this.pinState.entered;
+    const errorEl = document.getElementById('pinErrorMessage');
+    const cardEl = document.querySelector('.pin-lock-card');
+
+    try {
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Incorrect PIN');
+      }
+
+      sessionStorage.setItem('kitchen_auth_token', data.token);
+      this.pinState.authenticated = true;
+      this.hidePinLock();
+      this.showToast('Unlocked successfully', 'success');
+      await this.loadSettings();
+      await this.loadCategories();
+      this.refreshCurrentTab();
+    } catch (err) {
+      if (errorEl) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = 'block';
+      }
+      if (cardEl) {
+        cardEl.classList.add('pin-shake');
+        setTimeout(() => cardEl.classList.remove('pin-shake'), 450);
+      }
+      setTimeout(() => {
+        this.pinState.entered = '';
+        this.updatePinDots();
+      }, 400);
+    }
+  },
+
+  async lockApp() {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': sessionStorage.getItem('kitchen_auth_token') || ''
+        }
+      });
+    } catch (e) {}
+    sessionStorage.removeItem('kitchen_auth_token');
+    this.pinState.authenticated = false;
+    this.showPinLock();
+    this.showToast('App locked', 'info');
   },
 
   // ------------------------------------------
@@ -256,6 +409,11 @@ const App = {
       });
       document.getElementById('kitchenNameInput').value = this.state.kitchenName;
       document.getElementById('currencySelect').value = this.state.currency;
+
+      const pinCheckbox = document.getElementById('pinToggleCheckbox');
+      if (pinCheckbox && data.pinEnabled !== undefined) {
+        pinCheckbox.checked = Boolean(data.pinEnabled);
+      }
 
       this.renderNetworkIPs(data.localIPs, data.port);
     } catch (e) {
@@ -697,6 +855,79 @@ const App = {
         }
       }
     });
+
+    // Lock App Buttons (Desktop and Mobile)
+    const lockDesktop = document.getElementById('lockAppDesktopBtn');
+    const lockMobile = document.getElementById('lockAppMobileBtn');
+    if (lockDesktop) lockDesktop.addEventListener('click', () => this.lockApp());
+    if (lockMobile) lockMobile.addEventListener('click', () => this.lockApp());
+
+    // PIN Keypad Digits
+    document.querySelectorAll('.pin-key[data-digit]').forEach((btn) => {
+      btn.addEventListener('click', () => this.handlePinDigit(btn.dataset.digit));
+    });
+
+    const pinClearBtn = document.getElementById('pinClearBtn');
+    const pinBackBtn = document.getElementById('pinBackspaceBtn');
+    if (pinClearBtn) pinClearBtn.addEventListener('click', () => this.handlePinClear());
+    if (pinBackBtn) pinBackBtn.addEventListener('click', () => this.handlePinBackspace());
+
+    // Physical Keyboard support for PIN entry
+    window.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('pinLockModal');
+      if (!modal || modal.style.display === 'none') return;
+
+      if (/^[0-9]$/.test(e.key)) {
+        this.handlePinDigit(e.key);
+      } else if (e.key === 'Backspace') {
+        this.handlePinBackspace();
+      } else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') {
+        this.handlePinClear();
+      } else if (e.key === 'Enter') {
+        if (this.pinState.entered.length >= 4) {
+          this.submitPin();
+        }
+      }
+    });
+
+    // Toggle PIN Security in Settings
+    const pinToggle = document.getElementById('pinToggleCheckbox');
+    if (pinToggle) {
+      pinToggle.addEventListener('change', async () => {
+        try {
+          const res = await this.apiFetch('/api/auth/toggle-pin', {
+            method: 'POST',
+            body: { enabled: pinToggle.checked }
+          });
+          this.pinState.required = pinToggle.checked;
+          this.showToast(`PIN protection ${pinToggle.checked ? 'enabled' : 'disabled'}`, 'success');
+        } catch (err) {
+          pinToggle.checked = !pinToggle.checked;
+          this.showToast(err.message, 'error');
+        }
+      });
+    }
+
+    // Change PIN Form in Settings
+    const changePinForm = document.getElementById('changePinForm');
+    if (changePinForm) {
+      changePinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const currentPin = document.getElementById('currentPinInput').value;
+        const newPin = document.getElementById('newPinInput').value;
+
+        try {
+          const res = await this.apiFetch('/api/auth/change-pin', {
+            method: 'POST',
+            body: { currentPin, newPin }
+          });
+          this.showToast(res.message || 'PIN updated successfully!', 'success');
+          changePinForm.reset();
+        } catch (err) {
+          this.showToast(err.message, 'error');
+        }
+      });
+    }
   }
 };
 

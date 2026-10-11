@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const crypto = require('crypto');
 const { db, dbPath, clearAllData, restoreDatabase } = require('./db');
 const backupService = require('./backup-service');
 backupService.setDb(db);
@@ -40,13 +41,109 @@ function setSetting(key, value) {
 }
 
 // -------------------------------------------------------------
-// AUTH ROUTES (Screen lock disabled as requested for single user)
+// AUTHENTICATION & PIN SECURITY SYSTEM
 // -------------------------------------------------------------
-app.get('/api/auth/status', (req, res) => {
-  res.json({
-    pinRequired: false,
-    authenticated: true
+const activeSessions = new Set();
+
+function isPinEnabled() {
+  return getSetting('pin_enabled', '1') === '1';
+}
+
+function verifyAuthToken(req) {
+  if (!isPinEnabled()) return true;
+  const token = req.headers['x-auth-token'] || (req.headers['authorization'] && req.headers['authorization'].replace('Bearer ', ''));
+  return Boolean(token && activeSessions.has(token));
+}
+
+function requireAuth(req, res, next) {
+  if (!isPinEnabled()) return next();
+  if (verifyAuthToken(req)) return next();
+  return res.status(401).json({
+    error: 'Authentication required. Please enter PIN.',
+    pinRequired: true,
+    authenticated: false
   });
+}
+
+// Check PIN status
+app.get('/api/auth/status', (req, res) => {
+  const pinRequired = isPinEnabled();
+  const authenticated = verifyAuthToken(req);
+  res.json({
+    pinRequired,
+    authenticated: pinRequired ? authenticated : true
+  });
+});
+
+// Verify PIN
+app.post('/api/auth/verify', (req, res) => {
+  const { pin } = req.body;
+  const correctPin = getSetting('app_pin', '7327');
+
+  if (String(pin).trim() === String(correctPin).trim()) {
+    const token = crypto.randomBytes(24).toString('hex');
+    activeSessions.add(token);
+    return res.json({
+      success: true,
+      token,
+      message: 'Authenticated successfully'
+    });
+  }
+
+  res.status(401).json({
+    success: false,
+    error: 'Incorrect PIN. Please try again.'
+  });
+});
+
+// Logout (Lock Screen)
+app.post('/api/auth/logout', (req, res) => {
+  const token = req.headers['x-auth-token'] || (req.headers['authorization'] && req.headers['authorization'].replace('Bearer ', ''));
+  if (token) activeSessions.delete(token);
+  res.json({ success: true, message: 'Locked screen successfully' });
+});
+
+// Change PIN
+app.post('/api/auth/change-pin', requireAuth, (req, res) => {
+  const { currentPin, newPin } = req.body;
+  const correctPin = getSetting('app_pin', '7327');
+
+  if (String(currentPin).trim() !== String(correctPin).trim()) {
+    return res.status(400).json({ error: 'Current PIN is incorrect.' });
+  }
+
+  if (!newPin || String(newPin).trim().length < 4) {
+    return res.status(400).json({ error: 'New PIN must be at least 4 digits.' });
+  }
+
+  setSetting('app_pin', String(newPin).trim());
+  backupService.triggerAutoBackup('PIN code changed');
+  res.json({ success: true, message: 'PIN code updated successfully!' });
+});
+
+// Toggle PIN on/off
+app.post('/api/auth/toggle-pin', requireAuth, (req, res) => {
+  const { enabled } = req.body;
+  const val = enabled ? '1' : '0';
+  setSetting('pin_enabled', val);
+  backupService.triggerAutoBackup(`PIN security ${enabled ? 'enabled' : 'disabled'}`);
+  res.json({ success: true, pinRequired: enabled });
+});
+
+// Protect all functional APIs with PIN authentication if enabled
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    // Allow public auth & network endpoints
+    if (
+      req.path.startsWith('/api/auth/status') || 
+      req.path.startsWith('/api/auth/verify') || 
+      req.path.startsWith('/api/network-info')
+    ) {
+      return next();
+    }
+    return requireAuth(req, res, next);
+  }
+  next();
 });
 
 // -------------------------------------------------------------
@@ -69,7 +166,7 @@ app.get('/api/settings', (req, res) => {
   const currency = getSetting('currency', 'PKR');
   const kitchenName = getSetting('kitchen_name', 'Cloud Kitchen');
   const ips = getLocalIPs();
-  res.json({ currency, kitchenName, localIPs: ips, port: PORT });
+  res.json({ currency, kitchenName, pinEnabled: isPinEnabled(), localIPs: ips, port: PORT });
 });
 
 app.post('/api/settings', (req, res) => {

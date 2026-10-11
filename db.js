@@ -82,6 +82,8 @@ function initDatabase() {
   const insertSetting = currentDb.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   insertSetting.run('currency', 'PKR');
   insertSetting.run('kitchen_name', 'Cloud Kitchen');
+  insertSetting.run('pin_enabled', '1');
+  insertSetting.run('app_pin', '7327');
 
   // Initialize default categories if table is empty
   const categoryCount = currentDb.prepare('SELECT COUNT(*) as count FROM categories').get().count;
