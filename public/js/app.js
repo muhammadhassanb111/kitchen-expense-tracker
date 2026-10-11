@@ -23,6 +23,9 @@ const App = {
     if (window.Icons) window.Icons.replacePlaceholders();
 
     await this.checkAuthStatus();
+    if (this.pinState.required && !this.pinState.authenticated) {
+      return;
+    }
     await this.loadSettings();
     await this.loadCategories();
     this.refreshCurrentTab();
