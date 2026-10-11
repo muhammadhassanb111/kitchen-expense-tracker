@@ -595,6 +595,22 @@ const App = {
     const duration = 650;
     const startTime = performance.now();
 
+    const formattedEnd = `${prefix}${end.toLocaleString('en-US')}${suffix}`;
+
+    // Auto-scale font density based on formatted string length
+    if (formattedEnd.length >= 16) {
+      el.classList.add('stat-dense-xs');
+      el.classList.remove('stat-dense-sm');
+    } else if (formattedEnd.length >= 11) {
+      el.classList.add('stat-dense-sm');
+      el.classList.remove('stat-dense-xs');
+    } else {
+      el.classList.remove('stat-dense-sm', 'stat-dense-xs');
+    }
+
+    // Set tooltip title so full exact amount is always inspectable
+    el.setAttribute('title', formattedEnd);
+
     const step = (now) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
@@ -607,7 +623,7 @@ const App = {
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
-        el.textContent = `${prefix}${end.toLocaleString('en-US')}${suffix}`;
+        el.textContent = formattedEnd;
       }
     };
 

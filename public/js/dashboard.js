@@ -49,8 +49,9 @@ const Dashboard = {
         if (netBadgeEl) netBadgeEl.className = 'stat-icon-badge stat-badge-spent';
       }
     } else {
-      netProfitEl.className = 'stat-value text-muted';
+      netProfitEl.className = 'stat-value text-muted stat-dense-sm';
       netProfitEl.textContent = 'No Payout Yet';
+      netProfitEl.removeAttribute('title');
       if (netIconEl) netIconEl.innerHTML = window.Icons.get('scale', 'text-muted', 20);
       marginEl.className = 'pulse-badge';
       marginEl.textContent = 'Record a payout to track P&L';

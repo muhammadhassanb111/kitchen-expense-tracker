@@ -74,22 +74,24 @@ const Payouts = {
           <div class="payout-math-row">
             <div class="payout-math-box">
               <label>Payout Received</label>
-              <span class="text-success">${App.formatCurrency(p.amount)}</span>
+              <div class="payout-math-val text-success">${App.formatCurrency(p.amount)}</div>
             </div>
             <div class="payout-math-box">
               <label>Kitchen Expenses</label>
-              <span class="text-danger">${App.formatCurrency(p.total_expenses)}</span>
-              <div class="text-xs text-muted" style="font-weight:600;">(${p.expense_count} items)</div>
+              <div class="payout-math-val text-danger">
+                ${App.formatCurrency(p.total_expenses)}
+                <span class="text-xs text-muted" style="font-weight:600; display:block;">(${p.expense_count} items)</span>
+              </div>
             </div>
             <div class="payout-math-box">
               <label>Net Profit / Loss</label>
-              <span class="${isProfit ? 'text-success' : 'text-danger'}">
+              <div class="payout-math-val ${isProfit ? 'text-success' : 'text-danger'}">
                 ${profitSign} ${App.formatCurrency(profitAbs)}
-              </span>
-              <div class="mt-1">
-                <span class="pulse-badge ${profitClass}">
-                  ${p.profit_margin_pct}% margin
-                </span>
+                <div class="mt-1">
+                  <span class="pulse-badge ${profitClass}">
+                    ${p.profit_margin_pct}% margin
+                  </span>
+                </div>
               </div>
             </div>
           </div>
