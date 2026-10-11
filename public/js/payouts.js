@@ -171,28 +171,22 @@ const Payouts = {
   },
 
   promptDelete(payout) {
-    this.pendingDeleteId = payout.id;
-    document.getElementById('deleteConfirmText').innerHTML = `
-      Are you sure you want to delete payout <strong>"${this.escapeHtml(payout.notes || 'Payout')}"</strong> 
-      for <strong class="text-success">${App.formatCurrency(payout.amount)}</strong>?
-      <br><span class="text-muted text-xs">This will remove the P&L comparison record.</span>
-    `;
-    App.openModal('deleteConfirmModal');
-  },
-
-  async confirmDelete() {
-    if (!this.pendingDeleteId) return;
-
-    try {
-      await App.apiFetch(`/api/payouts/${this.pendingDeleteId}`, { method: 'DELETE' });
-      App.closeModal('deleteConfirmModal');
-      App.showToast('Payout deleted', 'success');
-      this.pendingDeleteId = null;
-      this.load();
-      if (App.state.currentTab === 'dashboard') Dashboard.load();
-    } catch (err) {
-      App.showToast(err.message, 'error');
-    }
+    App.promptDeleteConfirm(
+      `Are you sure you want to delete payout <strong>"${this.escapeHtml(payout.notes || 'Payout Settlement')}"</strong> 
+       for <strong class="text-success">${App.formatCurrency(payout.amount)}</strong>?
+       <br><span class="text-muted text-xs" style="margin-top:4px; display:block;">This will remove the P&L comparison record.</span>`,
+      async () => {
+        try {
+          await App.apiFetch(`/api/payouts/${payout.id}`, { method: 'DELETE' });
+          App.closeModal('deleteConfirmModal');
+          App.showToast('Payout deleted successfully', 'success');
+          this.load();
+          if (App.state.currentTab === 'dashboard') Dashboard.load();
+        } catch (err) {
+          App.showToast(err.message, 'error');
+        }
+      }
+    );
   },
 
   escapeHtml(str) {
@@ -209,6 +203,32 @@ const Payouts = {
     document.getElementById('openAddPayoutModalBtn').addEventListener('click', () => {
       this.openAddModal();
     });
+
+    // Delegated click handling for Edit and Delete buttons on payout cards
+    const container = document.getElementById('payoutsListContainer');
+    if (container) {
+      container.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.delete-payout-btn');
+        if (delBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = parseInt(delBtn.dataset.id, 10);
+          const item = this.currentPayouts.find((p) => p.id === id);
+          if (item) this.promptDelete(item);
+          return;
+        }
+
+        const editBtn = e.target.closest('.edit-payout-btn');
+        if (editBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = parseInt(editBtn.dataset.id, 10);
+          const item = this.currentPayouts.find((p) => p.id === id);
+          if (item) this.openEditModal(item);
+          return;
+        }
+      });
+    }
 
     document.getElementById('payoutForm').addEventListener('submit', (e) => {
       e.preventDefault();

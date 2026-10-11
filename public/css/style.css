@@ -1054,6 +1054,10 @@ body {
   transition: all 0.2s;
 }
 
+.btn-icon-action * {
+  pointer-events: none;
+}
+
 .btn-icon-action:hover {
   background: var(--bg-chip-hover);
   color: var(--text-main);

@@ -366,29 +366,23 @@ const Expenses = {
   },
 
   promptDelete(item) {
-    this.pendingDeleteId = item.id;
-    document.getElementById('deleteConfirmText').innerHTML = `
-      Are you sure you want to delete <strong>"${this.escapeHtml(item.item_name)}"</strong> 
-      for <strong class="text-danger">${App.formatCurrency(item.amount)}</strong>?
-      <br><span class="text-muted text-xs">This action cannot be undone.</span>
-    `;
-    App.openModal('deleteConfirmModal');
-  },
-
-  async confirmDelete() {
-    if (!this.pendingDeleteId) return;
-
-    try {
-      await App.apiFetch(`/api/expenses/${this.pendingDeleteId}`, { method: 'DELETE' });
-      App.closeModal('deleteConfirmModal');
-      App.showToast('Expense deleted', 'success');
-      this.pendingDeleteId = null;
-      App.loadCategories();
-      this.load();
-      if (App.state.currentTab === 'dashboard') Dashboard.load();
-    } catch (err) {
-      App.showToast(err.message, 'error');
-    }
+    App.promptDeleteConfirm(
+      `Are you sure you want to delete <strong>"${this.escapeHtml(item.item_name)}"</strong> 
+       for <strong class="text-danger">${App.formatCurrency(item.amount)}</strong>?
+       <br><span class="text-muted text-xs">This action cannot be undone.</span>`,
+      async () => {
+        try {
+          await App.apiFetch(`/api/expenses/${item.id}`, { method: 'DELETE' });
+          App.closeModal('deleteConfirmModal');
+          App.showToast('Expense deleted', 'success');
+          App.loadCategories();
+          this.load();
+          if (App.state.currentTab === 'dashboard') Dashboard.load();
+        } catch (err) {
+          App.showToast(err.message, 'error');
+        }
+      }
+    );
   },
 
   exportCsv() {
@@ -501,11 +495,6 @@ const Expenses = {
         vendor,
         notes
       });
-    });
-
-    // Confirm Delete button handler
-    document.getElementById('confirmDeleteActionBtn').addEventListener('click', () => {
-      this.confirmDelete();
     });
   }
 };

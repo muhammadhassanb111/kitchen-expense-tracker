@@ -638,9 +638,21 @@ const App = {
     if (modal) modal.classList.add('open');
   },
 
+  confirmDeleteAction: null,
+
+  promptDeleteConfirm(messageHtml, onConfirm) {
+    const textEl = document.getElementById('deleteConfirmText');
+    if (textEl) textEl.innerHTML = messageHtml;
+    this.confirmDeleteAction = onConfirm;
+    this.openModal('deleteConfirmModal');
+  },
+
   closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.remove('open');
+    if (modalId === 'deleteConfirmModal') {
+      this.confirmDeleteAction = null;
+    }
   },
 
   showToast(message, type = 'info') {
@@ -734,6 +746,18 @@ const App = {
         }
       });
     });
+
+    // Global Confirmation Modal action button
+    const confirmDeleteBtn = document.getElementById('confirmDeleteActionBtn');
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', async () => {
+        if (typeof this.confirmDeleteAction === 'function') {
+          const action = this.confirmDeleteAction;
+          this.confirmDeleteAction = null;
+          await action();
+        }
+      });
+    }
 
     // View All Expenses button on Dashboard
     const viewAllBtn = document.getElementById('viewAllExpensesBtn');

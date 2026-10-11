@@ -87,26 +87,19 @@ const Categories = {
   },
 
   promptDelete(id, name) {
-    document.getElementById('deleteConfirmText').innerHTML = `
-      Are you sure you want to delete category <strong>"${this.escapeHtml(name)}"</strong>?
-    `;
-    const confirmBtn = document.getElementById('confirmDeleteActionBtn');
-
-    // One-time click handler for category delete
-    const handleCategoryDelete = async () => {
-      confirmBtn.removeEventListener('click', handleCategoryDelete);
-      try {
-        await App.apiFetch(`/api/categories/${id}`, { method: 'DELETE' });
-        App.closeModal('deleteConfirmModal');
-        App.showToast(`Category "${name}" deleted`, 'success');
-        this.load();
-      } catch (err) {
-        App.showToast(err.message, 'error');
+    App.promptDeleteConfirm(
+      `Are you sure you want to delete category <strong>"${this.escapeHtml(name)}"</strong>?`,
+      async () => {
+        try {
+          await App.apiFetch(`/api/categories/${id}`, { method: 'DELETE' });
+          App.closeModal('deleteConfirmModal');
+          App.showToast(`Category "${name}" deleted`, 'success');
+          this.load();
+        } catch (err) {
+          App.showToast(err.message, 'error');
+        }
       }
-    };
-
-    confirmBtn.addEventListener('click', handleCategoryDelete, { once: true });
-    App.openModal('deleteConfirmModal');
+    );
   },
 
   escapeHtml(str) {
