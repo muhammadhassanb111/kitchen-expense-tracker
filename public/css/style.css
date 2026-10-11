@@ -1161,36 +1161,6 @@ body {
     font-size: 0.68rem;
     padding: 2px 7px;
   }
-
-  /* Payout Math Row Mobile Key-Value Stacking */
-  .payout-math-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 12px 14px;
-    text-align: left;
-  }
-
-  .payout-math-box {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0;
-    border-bottom: 1px dashed var(--border-subtle);
-  }
-
-  .payout-math-box:last-child {
-    border-bottom: none;
-  }
-
-  .payout-math-box label {
-    margin-bottom: 0;
-  }
-
-  .payout-math-box span,
-  .payout-math-box .payout-math-val {
-    font-size: 1rem;
-    text-align: right;
-  }
 }
 
 /* Local Rolling Snapshot Cards */
@@ -1292,10 +1262,19 @@ body {
 .payout-math-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
   background: var(--bg-chip);
-  padding: 14px;
+  padding: 14px 16px;
   border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.payout-math-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   text-align: center;
 }
 
@@ -1304,7 +1283,9 @@ body {
   text-transform: uppercase;
   font-weight: 700;
   color: var(--text-muted);
+  letter-spacing: 0.03em;
   display: block;
+  margin: 0;
 }
 
 .payout-math-box span,
@@ -1313,6 +1294,68 @@ body {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   display: block;
+  text-align: center;
+}
+
+/* Mobile Responsive Layout for Payout Cards */
+@media (max-width: 640px) {
+  .payout-card {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+
+  .payout-math-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 12px 14px !important;
+    text-align: left !important;
+  }
+
+  .payout-math-box {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 10px 0 !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    text-align: left !important;
+    gap: 12px !important;
+  }
+
+  .payout-math-box:last-child {
+    border-bottom: none !important;
+    padding-bottom: 2px !important;
+  }
+
+  .payout-math-box:first-child {
+    padding-top: 2px !important;
+  }
+
+  .payout-math-box label {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    color: var(--text-muted) !important;
+    text-align: left !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .payout-math-box span,
+  .payout-math-box .payout-math-val {
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    text-align: right !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 2px !important;
+  }
+
+  .payout-math-box .pulse-badge {
+    margin-top: 3px !important;
+    font-size: 0.72rem !important;
+  }
 }
 
 /* ===================================================================
