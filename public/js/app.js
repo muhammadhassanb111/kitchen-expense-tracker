@@ -294,12 +294,32 @@ const App = {
     this.refreshCurrentTab();
   },
 
-  // Safe file download helper: uses Blob API without altering window.location or session history
+  // Safe file download helper: uses Blob API with authentication headers without altering window.location or session history
   async downloadFile(url, fallbackFilename) {
     try {
       this.showToast('Preparing download...', 'info');
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Download failed with status ${res.status}`);
+      const token = sessionStorage.getItem('kitchen_auth_token') || '';
+      const headers = {};
+      if (token) {
+        headers['x-auth-token'] = token;
+      }
+
+      // Also append token to URL query parameter so both header and query authentication succeed
+      const separator = url.includes('?') ? '&' : '?';
+      const authenticatedUrl = token ? `${url}${separator}token=${encodeURIComponent(token)}` : url;
+
+      const res = await fetch(authenticatedUrl, { headers });
+
+      if (res.status === 401) {
+        this.showPinLock();
+        throw new Error('Please enter PIN to authorize download');
+      }
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Download failed with status ${res.status}`);
+      }
+
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -311,7 +331,7 @@ const App = {
       setTimeout(() => {
         if (a.parentNode) document.body.removeChild(a);
         window.URL.revokeObjectURL(blobUrl);
-      }, 200);
+      }, 500);
       this.showToast('Download started', 'success');
     } catch (err) {
       this.showToast('Download failed: ' + err.message, 'error');

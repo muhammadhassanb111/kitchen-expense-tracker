@@ -55,7 +55,9 @@ function isPinEnabled() {
 
 function verifyAuthToken(req) {
   if (!isPinEnabled()) return true;
-  const token = req.headers['x-auth-token'] || (req.headers['authorization'] && req.headers['authorization'].replace('Bearer ', ''));
+  const token = req.headers['x-auth-token'] 
+    || (req.headers['authorization'] && req.headers['authorization'].replace('Bearer ', ''))
+    || (req.query && req.query.token);
   return Boolean(token && activeSessions.has(token));
 }
 
@@ -667,7 +669,7 @@ app.get('/api/dashboard/stats', (req, res) => {
 
 app.get('/api/export/csv', (req, res) => {
   // Prevent accidental downloads if browser history navigates here via back/forward
-  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+  if (req.headers.accept && req.headers.accept.includes('text/html') && !req.query.token) {
     return res.redirect('/#expenses');
   }
 
@@ -812,7 +814,7 @@ app.post('/api/backup/restore-snapshot', (req, res) => {
 // Download standalone database copy
 app.get('/api/backup/db', async (req, res) => {
   // Prevent accidental downloads if browser history navigates here via back/forward
-  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+  if (req.headers.accept && req.headers.accept.includes('text/html') && !req.query.token) {
     return res.redirect('/#settings');
   }
 

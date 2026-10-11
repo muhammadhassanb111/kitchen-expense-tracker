@@ -420,7 +420,8 @@ const Expenses = {
     if (categoryId && categoryId !== 'all') url += `&categoryId=${encodeURIComponent(categoryId)}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
 
-    window.location.href = url;
+    const filename = `expenses_${App.state.startDate}_to_${App.state.endDate}.csv`;
+    App.downloadFile(url, filename);
   },
 
   escapeHtml(str) {
