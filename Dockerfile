@@ -1,7 +1,13 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 # Install build tools for better-sqlite3 and git for cloud auto-backup
-RUN apk add --no-cache python3 make g++ git tzdata
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    python3 \
+    make \
+    g++ \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
