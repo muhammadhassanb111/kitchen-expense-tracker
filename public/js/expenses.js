@@ -300,10 +300,16 @@ const Expenses = {
 
   openAddModal() {
     document.getElementById('expenseModalTitle').textContent = 'Add Expense';
+    const saveBtn = document.getElementById('saveExpenseBtn');
+    if (saveBtn) saveBtn.textContent = 'Add Expense';
     document.getElementById('expenseIdInput').value = '';
     document.getElementById('expenseForm').reset();
     document.getElementById('expDateInput').value = App.todayString();
     document.getElementById('itemDropdownMenu').style.display = 'none';
+
+    // Reset scroll position of modal body to top
+    const modalBody = document.querySelector('#expenseModal .modal-body');
+    if (modalBody) modalBody.scrollTop = 0;
 
     // Update suggestions for the first category
     const catSelect = document.getElementById('expCategorySelect');
@@ -316,6 +322,8 @@ const Expenses = {
 
   openEditModal(item) {
     document.getElementById('expenseModalTitle').textContent = 'Edit Expense';
+    const saveBtn = document.getElementById('saveExpenseBtn');
+    if (saveBtn) saveBtn.textContent = 'Save Changes';
     document.getElementById('expenseIdInput').value = item.id;
     document.getElementById('expDateInput').value = item.date;
     document.getElementById('expCategorySelect').value = item.category_id;
@@ -326,6 +334,10 @@ const Expenses = {
     document.getElementById('expVendorInput').value = item.vendor || '';
     document.getElementById('expNotesInput').value = item.notes || '';
     document.getElementById('itemDropdownMenu').style.display = 'none';
+
+    // Reset scroll position of modal body to top
+    const modalBody = document.querySelector('#expenseModal .modal-body');
+    if (modalBody) modalBody.scrollTop = 0;
 
     // Update suggestions for item's category and highlight selected item
     this.updateCategorySuggestions(item.category_id, item.item_name);

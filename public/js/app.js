@@ -156,11 +156,6 @@ const App = {
       errorEl.textContent = '';
     }
     modal.style.display = 'flex';
-    const hiddenInput = document.getElementById('pinHiddenInput');
-    if (hiddenInput) {
-      hiddenInput.value = '';
-      hiddenInput.focus();
-    }
   },
 
   hidePinLock() {

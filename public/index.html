@@ -612,7 +612,7 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-outline" data-close-modal="expenseModal">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="saveExpenseBtn">Save Expense</button>
+            <button type="submit" class="btn btn-primary" id="saveExpenseBtn">Add Expense</button>
           </div>
         </form>
       </div>
@@ -742,9 +742,6 @@
         </div>
 
         <div id="pinErrorMessage" class="pin-error-text" style="display:none;"></div>
-
-        <!-- Hidden input for desktop physical keyboard typing -->
-        <input type="password" id="pinHiddenInput" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="position:absolute; opacity:0; pointer-events:none;">
 
         <!-- Keypad for Touch / Mobile -->
         <div class="pin-keypad">
