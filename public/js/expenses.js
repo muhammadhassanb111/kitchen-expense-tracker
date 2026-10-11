@@ -42,6 +42,7 @@ const CATEGORY_ITEMS = {
 
 const Expenses = {
   currentExpenses: [],
+  cachedData: {},
   searchDebounceTimer: null,
   pendingDeleteId: null,
 
@@ -58,7 +59,16 @@ const Expenses = {
       if (categoryId && categoryId !== 'all') url += `&categoryId=${encodeURIComponent(categoryId)}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
 
+      const cacheKey = url;
+      if (this.cachedData[cacheKey]) {
+        const cached = this.cachedData[cacheKey];
+        this.currentExpenses = cached.expenses || [];
+        this.renderSummary(cached.summary);
+        this.renderExpensesList();
+      }
+
       const data = await App.apiFetch(url);
+      this.cachedData[cacheKey] = data;
       this.currentExpenses = data.expenses || [];
       this.renderSummary(data.summary);
       this.renderExpensesList();
@@ -362,9 +372,14 @@ const Expenses = {
       });
       App.closeModal('expenseModal');
       App.showToast(isEdit ? 'Expense updated!' : 'Expense added successfully!', 'success');
+      this.cachedData = {};
+      if (window.Dashboard) window.Dashboard.cachedData = {};
+      if (window.Categories) {
+        window.Categories.categoryExpensesCache = {};
+        window.Categories.load();
+      }
       App.loadCategories();
       this.load();
-      if (window.Categories) window.Categories.load();
       if (App.state.currentTab === 'dashboard') Dashboard.load();
     } catch (err) {
       App.showToast(err.message, 'error');
@@ -381,9 +396,14 @@ const Expenses = {
           await App.apiFetch(`/api/expenses/${item.id}`, { method: 'DELETE' });
           App.closeModal('deleteConfirmModal');
           App.showToast('Expense deleted', 'success');
+          this.cachedData = {};
+          if (window.Dashboard) window.Dashboard.cachedData = {};
+          if (window.Categories) {
+            window.Categories.categoryExpensesCache = {};
+            window.Categories.load();
+          }
           App.loadCategories();
           this.load();
-          if (window.Categories) window.Categories.load();
           if (App.state.currentTab === 'dashboard') Dashboard.load();
         } catch (err) {
           App.showToast(err.message, 'error');

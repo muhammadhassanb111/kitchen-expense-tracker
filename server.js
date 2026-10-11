@@ -13,8 +13,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static frontend files
-app.use(express.static(path.join(__dirname, 'public')));
+// Static frontend files with HTTP caching & ETag support
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1h',
+  etag: true,
+  lastModified: true
+}));
 
 // Get local IPv4 addresses
 function getLocalIPs() {

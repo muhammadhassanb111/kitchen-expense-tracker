@@ -4,10 +4,22 @@
 // ==========================================
 
 const Dashboard = {
+  cachedData: {},
+
   async load() {
+    const cacheKey = `${App.state.startDate}_${App.state.endDate}`;
+    if (this.cachedData[cacheKey]) {
+      const cached = this.cachedData[cacheKey];
+      this.renderSummary(cached.summary, cached.dailyTrend);
+      this.renderDonutChart(cached.categoryBreakdown, cached.summary.totalSpent);
+      this.renderTrendChart(cached.dailyTrend);
+      this.renderRecentExpenses(cached.recentExpenses);
+    }
+
     try {
       const url = `/api/dashboard/stats?startDate=${App.state.startDate}&endDate=${App.state.endDate}`;
       const data = await App.apiFetch(url);
+      this.cachedData[cacheKey] = data;
       this.renderSummary(data.summary, data.dailyTrend);
       this.renderDonutChart(data.categoryBreakdown, data.summary.totalSpent);
       this.renderTrendChart(data.dailyTrend);

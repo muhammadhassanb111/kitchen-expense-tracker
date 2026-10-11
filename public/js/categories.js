@@ -1,10 +1,13 @@
 // ==========================================
 // Kitchen Expense Tracker - Categories Module
+// Ultra-Fast & Smooth Edition (Instant Cache + Prefetch)
 // ==========================================
 
 const Categories = {
   currentCategory: null,
   currentCategoryExpenses: [],
+  categoryExpensesCache: {},
+  isPrefetching: false,
 
   init() {
     this.bindEvents();
@@ -16,8 +19,33 @@ const Categories = {
       App.state.categories = categories;
       App.populateCategorySelects();
       this.renderCategoriesList(categories);
+
+      // Background prefetch all expenses so tapping any category is 0ms instant
+      this.prefetchAllCategoryExpenses();
     } catch (err) {
       console.error('Failed to load categories:', err);
+    }
+  },
+
+  async prefetchAllCategoryExpenses() {
+    if (this.isPrefetching) return;
+    this.isPrefetching = true;
+    try {
+      const data = await App.apiFetch('/api/expenses');
+      const all = data.expenses || [];
+      const grouped = {};
+      all.forEach((item) => {
+        const cid = item.category_id;
+        if (!grouped[cid]) grouped[cid] = [];
+        grouped[cid].push(item);
+      });
+      (App.state.categories || []).forEach((c) => {
+        this.categoryExpensesCache[c.id] = grouped[c.id] || [];
+      });
+    } catch (e) {
+      // Background prefetch fails silently without blocking UI
+    } finally {
+      this.isPrefetching = false;
     }
   },
 
@@ -116,20 +144,53 @@ const Categories = {
     if (countEl) countEl.textContent = cat.expense_count || 0;
 
     const listContainer = document.getElementById('categoryExpensesListContainer');
+
+    // 1. INSTANT 0ms RENDER FROM CACHE
+    const cached = this.categoryExpensesCache[cat.id];
+    if (cached) {
+      this.currentCategoryExpenses = cached;
+      this.renderCategoryExpensesModal(cat, cached);
+      App.openModal('categoryExpensesModal');
+
+      // Revalidate silently in background to ensure data freshness
+      App.apiFetch(`/api/expenses?categoryId=${cat.id}`).then((fresh) => {
+        const freshList = fresh.expenses || [];
+        this.categoryExpensesCache[cat.id] = freshList;
+        this.currentCategoryExpenses = freshList;
+        if (freshList.length !== cached.length || JSON.stringify(freshList) !== JSON.stringify(cached)) {
+          this.renderCategoryExpensesModal(cat, freshList);
+        }
+      }).catch(() => {});
+      return;
+    }
+
+    // 2. COLD START (Not yet cached): Render high-fidelity skeleton placeholders immediately
     if (listContainer) {
       listContainer.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-          <div class="spinner" style="margin: 0 auto 12px auto;"></div>
-          Loading ${this.escapeHtml(cat.name)} expenses...
+        <div class="cat-expenses-list">
+          ${[1, 2, 3].map(() => `
+            <div class="cat-expense-card skeleton-card">
+              <div class="cat-expense-card-left">
+                <div class="skeleton-line" style="width: 70px; height: 11px; margin-bottom: 6px;"></div>
+                <div class="skeleton-line" style="width: 150px; height: 16px; margin-bottom: 6px;"></div>
+                <div class="skeleton-line" style="width: 110px; height: 12px;"></div>
+              </div>
+              <div class="cat-expense-card-right">
+                <div class="skeleton-line" style="width: 70px; height: 18px;"></div>
+              </div>
+            </div>
+          `).join('')}
         </div>
       `;
     }
 
     App.openModal('categoryExpensesModal');
 
+    // Fetch and populate cache
     try {
       const data = await App.apiFetch(`/api/expenses?categoryId=${cat.id}`);
       this.currentCategoryExpenses = data.expenses || [];
+      this.categoryExpensesCache[cat.id] = this.currentCategoryExpenses;
       this.renderCategoryExpensesModal(cat, this.currentCategoryExpenses);
     } catch (err) {
       if (listContainer) {
@@ -244,14 +305,19 @@ const Categories = {
                 await App.apiFetch(`/api/expenses/${item.id}`, { method: 'DELETE' });
                 App.closeModal('deleteConfirmModal');
                 App.showToast('Expense deleted successfully', 'success');
-                // Refresh categories list in background
+
+                // Invalidate caches
+                delete this.categoryExpensesCache[cat.id];
+
+                // Refresh background lists
                 await this.load();
                 if (window.Expenses) window.Expenses.load();
                 if (window.Dashboard && App.state.currentTab === 'dashboard') window.Dashboard.load();
 
                 // Re-fetch category expenses for modal
                 const updated = await App.apiFetch(`/api/expenses?categoryId=${cat.id}`);
-                this.renderCategoryExpensesModal(cat, updated.expenses || []);
+                this.categoryExpensesCache[cat.id] = updated.expenses || [];
+                this.renderCategoryExpensesModal(cat, this.categoryExpensesCache[cat.id]);
               } catch (err) {
                 App.showToast(err.message, 'error');
               }

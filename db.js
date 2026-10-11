@@ -13,6 +13,10 @@ function openDatabase(file) {
   const instance = new Database(file);
   instance.pragma('journal_mode = WAL');
   instance.pragma('foreign_keys = ON');
+  instance.pragma('synchronous = NORMAL');
+  instance.pragma('cache_size = -64000');
+  instance.pragma('temp_store = MEMORY');
+  instance.pragma('mmap_size = 268435456');
   return instance;
 }
 
@@ -76,6 +80,11 @@ function initDatabase() {
       notes TEXT,
       created_at TEXT DEFAULT (datetime('now', 'localtime'))
     );
+
+    CREATE INDEX IF NOT EXISTS idx_expenses_category_id ON expenses(category_id);
+    CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
+    CREATE INDEX IF NOT EXISTS idx_expenses_created_at ON expenses(created_at);
+    CREATE INDEX IF NOT EXISTS idx_payouts_payout_date ON payouts(payout_date);
   `);
 
   // Initialize default settings if not present
