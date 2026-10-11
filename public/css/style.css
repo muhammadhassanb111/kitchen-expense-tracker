@@ -1375,7 +1375,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 18px 14px;
+  padding: 18px 14px 14px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1383,12 +1383,25 @@ body {
   position: relative;
   gap: 8px;
   box-shadow: var(--shadow-card);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, border-color 0.2s;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .category-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-card-hover);
+  border-color: var(--primary);
+}
+
+.category-card:active {
+  transform: scale(0.98);
+}
+
+.category-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .category-card-icon {
@@ -1414,6 +1427,37 @@ body {
   font-weight: 600;
 }
 
+.category-card-view-hint {
+  font-size: 0.725rem;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-weight: 600;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  background: var(--primary-glow);
+  width: 100%;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.category-card:hover .category-card-view-hint {
+  background: var(--primary);
+  color: #fff;
+}
+
+.category-card-view-hint .hint-arrow {
+  font-size: 0.85rem;
+  font-weight: 800;
+  transition: transform 0.15s;
+}
+
+.category-card:hover .category-card-view-hint .hint-arrow {
+  transform: translateX(2px);
+}
+
 .category-card-delete {
   position: absolute;
   top: 10px;
@@ -1424,9 +1468,187 @@ body {
   cursor: pointer;
   padding: 4px;
   border-radius: var(--radius-xs);
+  z-index: 2;
 }
 .category-card-delete:hover {
   color: var(--outflow);
+}
+
+/* ===================================================================
+   CATEGORY EXPENSES DRILL-DOWN MODAL
+   =================================================================== */
+.cat-modal-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cat-modal-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cat-modal-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cat-modal-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.cat-modal-stat-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.cat-modal-stat-label {
+  font-size: 0.685rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cat-modal-stat-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.cat-modal-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cat-modal-body {
+  max-height: calc(75vh - 160px);
+  overflow-y: auto;
+  padding: 14px 18px 24px 18px;
+}
+
+.cat-expenses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cat-expense-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.cat-expense-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.cat-expense-card-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.cat-expense-date-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.cat-expense-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-expense-details {
+  font-size: 0.785rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.cat-expense-details .sep {
+  opacity: 0.6;
+}
+
+.cat-expense-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cat-expense-amount {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--outflow);
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-expense-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .cat-modal-summary-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+  .cat-modal-stats-group {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .cat-modal-quick-actions {
+    width: 100%;
+  }
+  .cat-modal-quick-actions .btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: 7px 10px;
+  }
+  .cat-modal-body {
+    padding: 10px 12px 20px 12px;
+    max-height: calc(80vh - 180px);
+  }
 }
 
 /* ===================================================================

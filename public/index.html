@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kitchen Expense Tracker</title>
-  <link rel="stylesheet" href="css/style.css?v=3.1">
+  <link rel="stylesheet" href="css/style.css?v=3.2">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
 </head>
 <body>
@@ -671,6 +671,45 @@
           </div>
         </form>
       </div>
+    <!-- Modal: Category Expenses Drill-down -->
+    <div id="categoryExpensesModal" class="modal-overlay">
+      <div class="modal-dialog modal-dialog-lg" style="max-width: 640px;">
+        <div class="modal-header">
+          <div class="cat-modal-header-info">
+            <span id="catExpHeaderIcon" class="cat-modal-icon-badge">🏷️</span>
+            <div>
+              <h3 id="catExpModalTitle" style="margin:0; font-size:1.15rem; font-weight:700;">Category Expenses</h3>
+              <p id="catExpModalSubtitle" class="text-muted" style="margin:2px 0 0 0; font-size:0.8rem;">0 expenses recorded</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" data-close-modal="categoryExpensesModal">✕</button>
+        </div>
+
+        <div class="cat-modal-summary-bar">
+          <div class="cat-modal-stats-group">
+            <div class="cat-modal-stat-box">
+              <span class="cat-modal-stat-label">Total Spent</span>
+              <span id="catExpTotalSpent" class="cat-modal-stat-val">₨ 0</span>
+            </div>
+            <div class="cat-modal-stat-box">
+              <span class="cat-modal-stat-label">Purchases</span>
+              <span id="catExpCount" class="cat-modal-stat-val">0</span>
+            </div>
+          </div>
+          <div class="cat-modal-quick-actions">
+            <button type="button" id="catExpAddBtn" class="btn btn-primary btn-sm">
+              <span data-icon="plus" data-size="14"></span> + Add Expense
+            </button>
+            <button type="button" id="catExpViewInTabBtn" class="btn btn-outline btn-sm">
+              <span>View in Expenses Tab →</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-body cat-modal-body" id="categoryExpensesListContainer">
+          <!-- Dynamically populated with category expense items -->
+        </div>
+      </div>
     </div>
 
     <!-- Modal: Delete Confirmation -->
@@ -734,11 +773,11 @@
   </div>
 
   <!-- Offline JavaScript Modules -->
-  <script src="js/icons.js?v=3.1"></script>
-  <script src="js/app.js?v=3.1"></script>
-  <script src="js/dashboard.js?v=3.1"></script>
-  <script src="js/expenses.js?v=3.1"></script>
-  <script src="js/payouts.js?v=3.1"></script>
-  <script src="js/categories.js?v=3.1"></script>
+  <script src="js/icons.js?v=3.2"></script>
+  <script src="js/app.js?v=3.2"></script>
+  <script src="js/dashboard.js?v=3.2"></script>
+  <script src="js/expenses.js?v=3.2"></script>
+  <script src="js/payouts.js?v=3.2"></script>
+  <script src="js/categories.js?v=3.2"></script>
 </body>
 </html>

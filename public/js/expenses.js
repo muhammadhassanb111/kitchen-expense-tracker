@@ -298,7 +298,7 @@ const Expenses = {
     }
   },
 
-  openAddModal() {
+  openAddModal(preselectedCategoryId = null) {
     document.getElementById('expenseModalTitle').textContent = 'Add Expense';
     const saveBtn = document.getElementById('saveExpenseBtn');
     if (saveBtn) saveBtn.textContent = 'Add Expense';
@@ -311,8 +311,13 @@ const Expenses = {
     const modalBody = document.querySelector('#expenseModal .modal-body');
     if (modalBody) modalBody.scrollTop = 0;
 
-    // Update suggestions for the first category
+    // Apply preselected category if passed
     const catSelect = document.getElementById('expCategorySelect');
+    if (preselectedCategoryId && catSelect) {
+      catSelect.value = preselectedCategoryId;
+    }
+
+    // Update suggestions for the active category
     if (catSelect && catSelect.value) {
       this.updateCategorySuggestions(catSelect.value, '');
     }
@@ -359,6 +364,7 @@ const Expenses = {
       App.showToast(isEdit ? 'Expense updated!' : 'Expense added successfully!', 'success');
       App.loadCategories();
       this.load();
+      if (window.Categories) window.Categories.load();
       if (App.state.currentTab === 'dashboard') Dashboard.load();
     } catch (err) {
       App.showToast(err.message, 'error');
@@ -377,6 +383,7 @@ const Expenses = {
           App.showToast('Expense deleted', 'success');
           App.loadCategories();
           this.load();
+          if (window.Categories) window.Categories.load();
           if (App.state.currentTab === 'dashboard') Dashboard.load();
         } catch (err) {
           App.showToast(err.message, 'error');

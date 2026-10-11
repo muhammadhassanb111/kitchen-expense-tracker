@@ -134,7 +134,7 @@ const Dashboard = {
 
     // Modern Legend
     legend.innerHTML = categories.map((cat) => `
-      <div class="legend-item">
+      <div class="legend-item clickable-legend-item" data-id="${cat.id}" style="cursor: pointer;" title="Click to view ${cat.name} expenses">
         <div class="legend-left">
           <span class="legend-dot" style="background-color: ${cat.color || '#6366f1'}; box-shadow: 0 0 6px ${cat.color || '#6366f1'};"></span>
           <span>${cat.name}</span>
@@ -142,9 +142,27 @@ const Dashboard = {
         <div class="legend-right">
           <span class="legend-amount">${App.formatCurrency(cat.total)}</span>
           <span class="legend-pct">${cat.percentage}%</span>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 4px;">›</span>
         </div>
       </div>
     `).join('');
+
+    legend.querySelectorAll('.clickable-legend-item').forEach((itemEl) => {
+      itemEl.addEventListener('click', () => {
+        const id = parseInt(itemEl.dataset.id, 10);
+        const cat = categories.find((c) => c.id === id);
+        if (cat && window.Categories) {
+          window.Categories.openCategoryExpenses({
+            id: cat.id,
+            name: cat.name,
+            color: cat.color,
+            icon: cat.icon,
+            total_spent: cat.total,
+            expense_count: cat.count
+          });
+        }
+      });
+    });
   },
 
   renderTrendChart(dailyTrend) {
