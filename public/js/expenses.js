@@ -87,15 +87,19 @@ const Expenses = {
 
     if (this.currentExpenses.length === 0) {
       container.className = 'expenses-wrapper';
+      const noExpTitle = window.I18n ? window.I18n.t('no_expenses_found', 'No Expenses Found') : 'No Expenses Found';
+      const noExpDesc = window.I18n ? window.I18n.t('no_expenses_hint', 'No expenses match the current filter or date range. Tap below to record one.') : 'No expenses match the current filter or date range. Tap below to record one.';
+      const addExpText = window.I18n ? window.I18n.t('add_expense', '+ Add Expense') : '+ Add New Expense';
+
       container.innerHTML = `
         <div class="card empty-state" style="padding: 60px 20px;">
           <div class="empty-state-icon">
             ${window.Icons ? window.Icons.get('expenses', '', 32) : '🧾'}
           </div>
-          <h4>No Expenses Found</h4>
-          <p>No expenses match the current filter or date range. Tap below to record one.</p>
+          <h4>${noExpTitle}</h4>
+          <p>${noExpDesc}</p>
           <button class="btn btn-primary btn-sm mt-2" onclick="Expenses.openAddModal()">
-            ${window.Icons ? window.Icons.get('plus', '', 16) : '+'} Add New Expense
+            ${window.Icons ? window.Icons.get('plus', '', 16) : '+'} ${addExpText}
           </button>
         </div>
       `;
@@ -108,17 +112,20 @@ const Expenses = {
     // 1. Mobile Cards View
     const cardsHtml = `
       <div class="expenses-wrapper has-desktop-view">
-        ${this.currentExpenses.map((item) => `
+        ${this.currentExpenses.map((item) => {
+          const catName = window.I18n ? window.I18n.getCategoryName(item.category_name) : item.category_name;
+          const unitStr = item.unit ? (window.I18n ? window.I18n.getUnitName(item.unit) : item.unit) : '';
+          return `
           <div class="expense-card" data-id="${item.id}">
             <div class="exp-card-header">
               <div class="flex-1">
                 <div class="exp-item-title">${this.escapeHtml(item.item_name)}</div>
                 <div class="exp-card-meta mt-1">
                   <span class="category-pill" style="background-color: ${item.category_color}">
-                    ${item.category_name}
+                    ${this.escapeHtml(catName)}
                   </span>
                   <span>${App.formatDate(item.date)}</span>
-                  ${item.quantity ? `<span>• ${item.quantity} ${item.unit || ''}</span>` : ''}
+                  ${item.quantity ? `<span>• ${item.quantity} ${this.escapeHtml(unitStr)}</span>` : ''}
                 </div>
               </div>
               <div class="exp-card-amount">
@@ -142,37 +149,49 @@ const Expenses = {
               </div>
             </div>
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>
     `;
 
     // 2. Desktop Table View
+    const thDate = window.I18n ? window.I18n.t('form_date', 'Date') : 'Date';
+    const thItem = window.I18n ? window.I18n.t('form_item_name', 'Item Name') : 'Item Name';
+    const thCat = window.I18n ? window.I18n.t('form_category', 'Category') : 'Category';
+    const thQty = window.I18n ? window.I18n.t('form_quantity', 'Quantity') : 'Quantity';
+    const thVendor = window.I18n ? window.I18n.t('form_vendor', 'Vendor') : 'Vendor';
+    const thNotes = window.I18n ? window.I18n.t('form_notes', 'Notes') : 'Notes';
+    const thAmount = window.I18n ? window.I18n.t('form_amount', 'Amount') : 'Amount';
+    const thActions = window.I18n ? window.I18n.t('th_actions', 'Actions') : 'Actions';
+
     const tableHtml = `
       <div class="desktop-table-container">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Item Name</th>
-              <th>Category</th>
-              <th>Quantity</th>
-              <th>Vendor</th>
-              <th>Notes</th>
-              <th style="text-align: right;">Amount</th>
-              <th style="text-align: center; width: 90px;">Actions</th>
+              <th>${thDate}</th>
+              <th>${thItem}</th>
+              <th>${thCat}</th>
+              <th>${thQty}</th>
+              <th>${thVendor}</th>
+              <th>${thNotes}</th>
+              <th style="text-align: right;">${thAmount}</th>
+              <th style="text-align: center; width: 90px;">${thActions}</th>
             </tr>
           </thead>
           <tbody>
-            ${this.currentExpenses.map((item) => `
+            ${this.currentExpenses.map((item) => {
+              const catName = window.I18n ? window.I18n.getCategoryName(item.category_name) : item.category_name;
+              const unitStr = item.unit ? (window.I18n ? window.I18n.getUnitName(item.unit) : item.unit) : '';
+              return `
               <tr data-id="${item.id}">
                 <td style="white-space: nowrap; font-weight: 600; color: var(--text-muted);">${App.formatDate(item.date)}</td>
                 <td><strong style="color: var(--text-main);">${this.escapeHtml(item.item_name)}</strong></td>
                 <td>
                   <span class="category-pill" style="background-color: ${item.category_color}">
-                    ${item.category_name}
+                    ${this.escapeHtml(catName)}
                   </span>
                 </td>
-                <td style="color: var(--text-muted); font-weight: 500;">${item.quantity ? `${item.quantity} ${item.unit || ''}` : '—'}</td>
+                <td style="color: var(--text-muted); font-weight: 500;">${item.quantity ? `${item.quantity} ${this.escapeHtml(unitStr)}` : '—'}</td>
                 <td style="color: var(--text-muted);">${item.vendor ? this.escapeHtml(item.vendor) : '—'}</td>
                 <td style="color: var(--text-muted); font-size: 0.825rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                   ${item.notes ? this.escapeHtml(item.notes) : '—'}
@@ -187,7 +206,7 @@ const Expenses = {
                   </div>
                 </td>
               </tr>
-            `).join('')}
+            `;}).join('')}
           </tbody>
         </table>
       </div>
@@ -224,18 +243,28 @@ const Expenses = {
     const input = document.getElementById('expItemInput');
 
     if (!cat) {
-      if (label) label.textContent = 'Suggestions:';
+      if (label) label.textContent = window.I18n ? window.I18n.t('suggestions_label', 'Suggestions:') : 'Suggestions:';
       if (chipsContainer) chipsContainer.innerHTML = '';
       if (menuContainer) menuContainer.innerHTML = '';
       return;
     }
 
+    const catDisplayName = window.I18n ? window.I18n.getCategoryName(cat.name) : cat.name;
     if (label) {
-      label.textContent = `Suggestions for ${cat.name}:`;
+      if (window.I18n && window.I18n.isUrdu()) {
+        label.textContent = `${catDisplayName} کے لیے عام اشیاء:`;
+      } else {
+        label.textContent = `Suggestions for ${catDisplayName}:`;
+      }
     }
 
     const key = cat.name.toLowerCase().trim();
-    let suggestions = CATEGORY_ITEMS[key] || CATEGORY_ITEMS['other'] || [];
+    let suggestions = [];
+    if (window.I18n && typeof window.I18n.getItemSuggestions === 'function') {
+      suggestions = [...window.I18n.getItemSuggestions(cat.name)];
+    } else {
+      suggestions = [...(CATEGORY_ITEMS[key] || CATEGORY_ITEMS['other'] || [])];
+    }
 
     // Also include any previously saved item names for this category from the user
     this.currentExpenses.forEach((exp) => {
@@ -309,9 +338,9 @@ const Expenses = {
   },
 
   openAddModal(preselectedCategoryId = null) {
-    document.getElementById('expenseModalTitle').textContent = 'Add Expense';
+    document.getElementById('expenseModalTitle').textContent = window.I18n ? window.I18n.t('modal_add_expense_title', 'Add Expense') : 'Add Expense';
     const saveBtn = document.getElementById('saveExpenseBtn');
-    if (saveBtn) saveBtn.textContent = 'Add Expense';
+    if (saveBtn) saveBtn.textContent = window.I18n ? window.I18n.t('btn_save_expense', 'Add Expense') : 'Add Expense';
     document.getElementById('expenseIdInput').value = '';
     document.getElementById('expenseForm').reset();
     document.getElementById('expDateInput').value = App.todayString();
@@ -336,9 +365,9 @@ const Expenses = {
   },
 
   openEditModal(item) {
-    document.getElementById('expenseModalTitle').textContent = 'Edit Expense';
+    document.getElementById('expenseModalTitle').textContent = window.I18n ? window.I18n.t('modal_edit_expense_title', 'Edit Expense') : 'Edit Expense';
     const saveBtn = document.getElementById('saveExpenseBtn');
-    if (saveBtn) saveBtn.textContent = 'Save Changes';
+    if (saveBtn) saveBtn.textContent = window.I18n ? window.I18n.t('btn_update_expense', 'Save Changes') : 'Save Changes';
     document.getElementById('expenseIdInput').value = item.id;
     document.getElementById('expDateInput').value = item.date;
     document.getElementById('expCategorySelect').value = item.category_id;
@@ -371,7 +400,10 @@ const Expenses = {
         body: formData
       });
       App.closeModal('expenseModal');
-      App.showToast(isEdit ? 'Expense updated!' : 'Expense added successfully!', 'success');
+      const toastMsg = isEdit
+        ? (window.I18n ? window.I18n.t('toast_expense_updated', 'Expense updated!') : 'Expense updated!')
+        : (window.I18n ? window.I18n.t('toast_expense_added', 'Expense added successfully!') : 'Expense added successfully!');
+      App.showToast(toastMsg, 'success');
       this.cachedData = {};
       if (window.Dashboard) window.Dashboard.cachedData = {};
       if (window.Categories) {
@@ -387,15 +419,18 @@ const Expenses = {
   },
 
   promptDelete(item) {
+    const confirmMsg = window.I18n && window.I18n.isUrdu()
+      ? `کیا آپ واقعی <strong>"${this.escapeHtml(item.item_name)}"</strong> کا خرچہ (<strong class="text-danger">${App.formatCurrency(item.amount)}</strong>) حذف کرنا چاہتے ہیں؟<br><span class="text-muted text-xs">اس عمل کو واپس نہیں لایا جا سکتا۔</span>`
+      : `Are you sure you want to delete <strong>"${this.escapeHtml(item.item_name)}"</strong> for <strong class="text-danger">${App.formatCurrency(item.amount)}</strong>?<br><span class="text-muted text-xs">This action cannot be undone.</span>`;
+
     App.promptDeleteConfirm(
-      `Are you sure you want to delete <strong>"${this.escapeHtml(item.item_name)}"</strong> 
-       for <strong class="text-danger">${App.formatCurrency(item.amount)}</strong>?
-       <br><span class="text-muted text-xs">This action cannot be undone.</span>`,
+      confirmMsg,
       async () => {
         try {
           await App.apiFetch(`/api/expenses/${item.id}`, { method: 'DELETE' });
           App.closeModal('deleteConfirmModal');
-          App.showToast('Expense deleted', 'success');
+          const delToast = window.I18n ? window.I18n.t('toast_expense_deleted', 'Expense deleted') : 'Expense deleted';
+          App.showToast(delToast, 'success');
           this.cachedData = {};
           if (window.Dashboard) window.Dashboard.cachedData = {};
           if (window.Categories) {

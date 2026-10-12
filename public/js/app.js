@@ -17,6 +17,9 @@ const App = {
 
   async init() {
     this.initTheme();
+    if (window.I18n) {
+      window.I18n.setLanguage(window.I18n.currentLang);
+    }
     this.setupDateRanges('month');
     this.bindEvents();
     this.initHistoryNavigation();
@@ -29,6 +32,15 @@ const App = {
     await this.loadSettings();
     await this.loadCategories();
     this.refreshCurrentTab();
+  },
+
+  onLanguageChange(lang) {
+    this.populateCategorySelects();
+    this.updatePeriodDisplay();
+    this.refreshCurrentTab();
+    if (window.Categories && window.Categories.categoryExpensesCache) {
+      window.Categories.categoryExpensesCache = {};
+    }
   },
 
   initHistoryNavigation() {
@@ -566,18 +578,21 @@ const App = {
   populateCategorySelects() {
     const modalSelect = document.getElementById('expCategorySelect');
     if (modalSelect) {
-      modalSelect.innerHTML = this.state.categories.map((c) => `
-        <option value="${c.id}">${c.name}</option>
-      `).join('');
+      modalSelect.innerHTML = this.state.categories.map((c) => {
+        const displayName = window.I18n ? window.I18n.getCategoryName(c.name) : c.name;
+        return `<option value="${c.id}">${displayName}</option>`;
+      }).join('');
     }
 
     const filterSelect = document.getElementById('expenseCategoryFilter');
     if (filterSelect) {
+      const allText = window.I18n ? window.I18n.t('all_categories', 'All Categories') : 'All Categories';
       const currentVal = filterSelect.value || 'all';
-      filterSelect.innerHTML = `<option value="all">All Categories</option>` +
-        this.state.categories.map((c) => `
-          <option value="${c.id}">${c.name}</option>
-        `).join('');
+      filterSelect.innerHTML = `<option value="all">${allText}</option>` +
+        this.state.categories.map((c) => {
+          const displayName = window.I18n ? window.I18n.getCategoryName(c.name) : c.name;
+          return `<option value="${c.id}">${displayName}</option>`;
+        }).join('');
       filterSelect.value = currentVal;
     }
   },
@@ -587,7 +602,11 @@ const App = {
   // ------------------------------------------
   formatCurrency(amount) {
     const num = Number(amount) || 0;
-    return `${this.state.currency} ${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    const formatted = num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    if (window.I18n && window.I18n.isUrdu()) {
+      return `${formatted} روپے`;
+    }
+    return `${this.state.currency} ${formatted}`;
   },
 
   formatDate(dateStr) {
@@ -595,6 +614,10 @@ const App = {
     try {
       const [year, month, day] = dateStr.split('-');
       const d = new Date(year, month - 1, day);
+      if (window.I18n && window.I18n.isUrdu()) {
+        const monthsUr = ['جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون', 'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'];
+        return `${day} ${monthsUr[d.getMonth()]} ${year}`;
+      }
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     } catch (e) {
       return dateStr;
@@ -708,6 +731,20 @@ const App = {
     const desktopToggle = document.getElementById('desktopThemeToggleBtn');
     if (mobileToggle) mobileToggle.addEventListener('click', () => this.toggleTheme());
     if (desktopToggle) desktopToggle.addEventListener('click', () => this.toggleTheme());
+
+    // Language toggle buttons (Mobile, Desktop, PIN Lock screen, Settings Radios)
+    const mobileLangBtn = document.getElementById('mobileLangToggleBtn');
+    const desktopLangBtn = document.getElementById('desktopLangToggleBtn');
+    const pinLangBtn = document.getElementById('pinLangToggleBtn');
+
+    if (mobileLangBtn) mobileLangBtn.addEventListener('click', () => window.I18n && window.I18n.toggleLanguage());
+    if (desktopLangBtn) desktopLangBtn.addEventListener('click', () => window.I18n && window.I18n.toggleLanguage());
+    if (pinLangBtn) pinLangBtn.addEventListener('click', () => window.I18n && window.I18n.toggleLanguage());
+
+    const radEn = document.getElementById('langRadioEn');
+    const radUr = document.getElementById('langRadioUr');
+    if (radEn) radEn.addEventListener('change', () => window.I18n && window.I18n.setLanguage('en'));
+    if (radUr) radUr.addEventListener('change', () => window.I18n && window.I18n.setLanguage('ur'));
 
     // Navigation buttons (Sidebar & Bottom Nav)
     document.addEventListener('click', (e) => {

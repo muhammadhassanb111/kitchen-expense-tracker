@@ -2403,3 +2403,220 @@ body {
   transform: translateX(20px);
 }
 
+/* ===================================================================
+   URDU TYPOGRAPHY & RTL SUPPORT (English / اردو)
+   =================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap');
+
+[lang="ur"], [dir="rtl"], body.lang-ur {
+  --font-stack: "Noto Nastaliq Urdu", "Urdu Typesetting", "Jameel Noori Nastaleeq", "Noto Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--font-stack);
+  letter-spacing: 0;
+}
+
+body.lang-ur {
+  direction: rtl;
+  text-align: right;
+}
+
+body.lang-ur h1,
+body.lang-ur h2,
+body.lang-ur h3,
+body.lang-ur h4,
+body.lang-ur .stat-value,
+body.lang-ur .nav-label,
+body.lang-ur .btn,
+body.lang-ur .stat-title,
+body.lang-ur .stat-meta,
+body.lang-ur input,
+body.lang-ur select,
+body.lang-ur textarea {
+  font-family: var(--font-stack);
+  letter-spacing: 0;
+}
+
+body.lang-ur .brand-info h1 {
+  font-size: 1.15rem;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+body.lang-ur .brand-subtitle {
+  font-size: 0.75rem;
+}
+
+/* Language Switcher Buttons */
+.lang-toggle-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 0 10px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+
+.lang-toggle-btn:hover {
+  background: var(--bg-chip-hover);
+  border-color: var(--brand);
+  transform: scale(1.05);
+}
+
+.lang-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.lang-flag-badge {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--brand);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pin-lang-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--bg-chip);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+[dir="rtl"] .pin-lang-btn {
+  right: auto;
+  left: 16px;
+}
+
+.pin-lang-btn:hover {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+/* RTL Layout & Component Alignments */
+[dir="rtl"] .sidebar-nav-btn {
+  text-align: right;
+  gap: 12px;
+}
+
+[dir="rtl"] .desktop-table-container th,
+[dir="rtl"] .desktop-table-container td {
+  text-align: right;
+}
+
+[dir="rtl"] .desktop-table-container th:last-child,
+[dir="rtl"] .desktop-table-container td:last-child {
+  text-align: center;
+}
+
+[dir="rtl"] .desktop-table-container th:nth-last-child(2),
+[dir="rtl"] .desktop-table-container td:nth-last-child(2) {
+  text-align: left;
+}
+
+[dir="rtl"] .search-box .search-icon {
+  left: auto;
+  right: 14px;
+}
+
+[dir="rtl"] .search-box input {
+  padding-left: 36px;
+  padding-right: 42px;
+  text-align: right;
+}
+
+[dir="rtl"] .search-box .clear-btn {
+  right: auto;
+  left: 12px;
+}
+
+[dir="rtl"] .combobox-toggle-btn {
+  right: auto;
+  left: 10px;
+}
+
+[dir="rtl"] .combobox-wrapper input {
+  padding-left: 36px;
+  padding-right: 14px;
+  text-align: right;
+}
+
+[dir="rtl"] .category-card-view-hint .hint-arrow {
+  transform: rotate(180deg);
+}
+
+[dir="rtl"] .modal-close-btn {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .stat-card-top {
+  flex-direction: row;
+}
+
+[dir="rtl"] .exp-card-header {
+  flex-direction: row;
+}
+
+[dir="rtl"] .exp-card-amount {
+  text-align: left;
+}
+
+[dir="rtl"] .payout-math-row {
+  flex-direction: row;
+}
+
+/* Language Selection Card in Settings */
+.lang-radio-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lang-radio-card {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-chip);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-radio-card:hover {
+  border-color: var(--brand);
+  background: var(--bg-chip-hover);
+}
+
+.lang-radio-card.active,
+.lang-radio-card:has(input:checked) {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+.lang-radio-card input {
+  cursor: pointer;
+}
+
+

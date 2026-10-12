@@ -24,17 +24,19 @@ const Payouts = {
     const container = document.getElementById('payoutsListContainer');
 
     if (this.currentPayouts.length === 0) {
+      const emptyTitle = window.I18n ? window.I18n.t('no_payouts_found', 'No Payouts Recorded') : 'No Payouts Recorded';
+      const emptyDesc = window.I18n ? window.I18n.t('payouts_desc', 'Record payments received from Foodpanda or catering channels to compare against grocery expenses and reveal your net profit margin.') : 'Record payments received from Foodpanda or catering channels to compare against grocery expenses and reveal your net profit margin.';
+      const emptyBtn = window.I18n ? window.I18n.t('btn_record_payout', '+ Record First Payout') : '+ Record First Payout';
+
       container.innerHTML = `
         <div class="card empty-state" style="padding: 60px 20px;">
           <div class="empty-state-icon">
             ${window.Icons ? window.Icons.get('payouts', '', 32) : '💰'}
           </div>
-          <h4>No Payouts Recorded</h4>
-          <p>
-            Record payments received from Foodpanda or catering channels to compare against grocery expenses and reveal your net profit margin.
-          </p>
+          <h4>${emptyTitle}</h4>
+          <p>${emptyDesc}</p>
           <button class="btn btn-primary btn-sm mt-2" onclick="Payouts.openAddModal()">
-            ${window.Icons ? window.Icons.get('plus', '', 16) : '+'} Record First Payout
+            ${window.Icons ? window.Icons.get('plus', '', 16) : '+'} ${emptyBtn}
           </button>
         </div>
       `;
@@ -44,24 +46,33 @@ const Payouts = {
     const editIcon = window.Icons ? window.Icons.get('edit', '', 16) : '✏️';
     const trashIcon = window.Icons ? window.Icons.get('trash', '', 16) : '🗑️';
 
+    const lblPeriod = window.I18n ? window.I18n.t('payout_period_label', 'Period:') : 'Period:';
+    const lblReceived = window.I18n ? window.I18n.t('payout_received_on', 'Received on') : 'Received on';
+    const lblPayoutReceived = window.I18n ? window.I18n.t('payout_received_box', 'Payout Received') : 'Payout Received';
+    const lblKitchenExpenses = window.I18n ? window.I18n.t('payout_kitchen_expenses', 'Kitchen Expenses') : 'Kitchen Expenses';
+    const lblNetProfit = window.I18n ? window.I18n.t('kpi_net_profit', 'Net Profit / Loss') : 'Net Profit / Loss';
+    const defaultNotes = window.I18n && window.I18n.isUrdu() ? 'آمدنی کا حساب' : 'Payout Settlement';
+
     container.innerHTML = this.currentPayouts.map((p) => {
       const isProfit = p.net_profit >= 0;
       const profitClass = isProfit ? 'is-profit' : 'is-loss';
       const profitSign = isProfit ? '+' : '-';
       const profitAbs = Math.abs(p.net_profit);
+      const itemsCountStr = window.I18n && window.I18n.isUrdu() ? `(${p.expense_count} اشیاء)` : `(${p.expense_count} items)`;
+      const marginStr = window.I18n && window.I18n.isUrdu() ? `${p.profit_margin_pct}% منافع` : `${p.profit_margin_pct}% margin`;
 
       return `
         <div class="payout-card" data-id="${p.id}">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
               <span class="payout-cycle-badge">
-                ${window.Icons ? window.Icons.get('calendar', '', 14) : '📅'} Period: ${App.formatDate(p.period_start)} – ${App.formatDate(p.period_end)}
+                ${window.Icons ? window.Icons.get('calendar', '', 14) : '📅'} ${lblPeriod} ${App.formatDate(p.period_start)} – ${App.formatDate(p.period_end)}
               </span>
               <h3 style="font-size: 1.15rem; margin-top: 8px; font-weight: 800; letter-spacing:-0.02em;">
-                ${this.escapeHtml(p.notes || 'Payout Settlement')}
+                ${this.escapeHtml(p.notes || defaultNotes)}
               </h3>
               <span class="text-muted text-xs" style="font-weight:600;">
-                Received on ${App.formatDate(p.payout_date)}
+                ${lblReceived} ${App.formatDate(p.payout_date)}
               </span>
             </div>
             <div style="display: flex; gap: 6px;">
@@ -73,23 +84,23 @@ const Payouts = {
           <!-- 3-Column Math Box: Payout - Expenses = Net Profit -->
           <div class="payout-math-row">
             <div class="payout-math-box">
-              <label>Payout Received</label>
+              <label>${lblPayoutReceived}</label>
               <div class="payout-math-val text-success">${App.formatCurrency(p.amount)}</div>
             </div>
             <div class="payout-math-box">
-              <label>Kitchen Expenses</label>
+              <label>${lblKitchenExpenses}</label>
               <div class="payout-math-val text-danger">
                 ${App.formatCurrency(p.total_expenses)}
-                <span class="text-xs text-muted" style="font-weight:600; display:block;">(${p.expense_count} items)</span>
+                <span class="text-xs text-muted" style="font-weight:600; display:block;">${itemsCountStr}</span>
               </div>
             </div>
             <div class="payout-math-box">
-              <label>Net Profit / Loss</label>
+              <label>${lblNetProfit}</label>
               <div class="payout-math-val ${isProfit ? 'text-success' : 'text-danger'}">
                 ${profitSign} ${App.formatCurrency(profitAbs)}
                 <div class="mt-1">
                   <span class="pulse-badge ${profitClass}">
-                    ${p.profit_margin_pct}% margin
+                    ${marginStr}
                   </span>
                 </div>
               </div>
@@ -118,7 +129,9 @@ const Payouts = {
   },
 
   openAddModal() {
-    document.getElementById('payoutModalTitle').textContent = 'Record Payout';
+    document.getElementById('payoutModalTitle').textContent = window.I18n ? window.I18n.t('modal_record_payout_title', 'Record Payout') : 'Record Payout';
+    const saveBtn = document.getElementById('savePayoutBtn');
+    if (saveBtn) saveBtn.textContent = window.I18n ? window.I18n.t('btn_save_payout', 'Save Payout') : 'Save Payout';
     document.getElementById('payoutIdInput').value = '';
     document.getElementById('payoutForm').reset();
     document.getElementById('payoutDateInput').value = App.todayString();
@@ -141,7 +154,9 @@ const Payouts = {
   },
 
   openEditModal(payout) {
-    document.getElementById('payoutModalTitle').textContent = 'Edit Payout';
+    document.getElementById('payoutModalTitle').textContent = window.I18n ? window.I18n.t('modal_edit_payout_title', 'Edit Payout') : 'Edit Payout';
+    const saveBtn = document.getElementById('savePayoutBtn');
+    if (saveBtn) saveBtn.textContent = window.I18n ? window.I18n.t('btn_update_expense', 'Save Changes') : 'Save Changes';
     document.getElementById('payoutIdInput').value = payout.id;
     document.getElementById('payoutDateInput').value = payout.payout_date;
     document.getElementById('payoutAmountInput').value = payout.amount;
@@ -162,7 +177,8 @@ const Payouts = {
         body: formData
       });
       App.closeModal('payoutModal');
-      App.showToast(isEdit ? 'Payout updated!' : 'Payout saved successfully!', 'success');
+      const toastMsg = window.I18n ? window.I18n.t('toast_payout_saved', 'Payout saved successfully!') : 'Payout saved successfully!';
+      App.showToast(toastMsg, 'success');
       this.load();
       if (App.state.currentTab === 'dashboard') Dashboard.load();
     } catch (err) {
@@ -171,15 +187,19 @@ const Payouts = {
   },
 
   promptDelete(payout) {
+    const defaultNotes = window.I18n && window.I18n.isUrdu() ? 'آمدنی کا حساب' : 'Payout Settlement';
+    const confirmMsg = window.I18n && window.I18n.isUrdu()
+      ? `کیا آپ واقعی یہ آمدنی <strong>"${this.escapeHtml(payout.notes || defaultNotes)}"</strong> (<strong class="text-success">${App.formatCurrency(payout.amount)}</strong>) حذف کرنا چاہتے ہیں؟<br><span class="text-muted text-xs" style="margin-top:4px; display:block;">اس سے منافع کا موازنہ ختم ہو جائے گا۔</span>`
+      : `Are you sure you want to delete payout <strong>"${this.escapeHtml(payout.notes || defaultNotes)}"</strong> for <strong class="text-success">${App.formatCurrency(payout.amount)}</strong>?<br><span class="text-muted text-xs" style="margin-top:4px; display:block;">This will remove the P&L comparison record.</span>`;
+
     App.promptDeleteConfirm(
-      `Are you sure you want to delete payout <strong>"${this.escapeHtml(payout.notes || 'Payout Settlement')}"</strong> 
-       for <strong class="text-success">${App.formatCurrency(payout.amount)}</strong>?
-       <br><span class="text-muted text-xs" style="margin-top:4px; display:block;">This will remove the P&L comparison record.</span>`,
+      confirmMsg,
       async () => {
         try {
           await App.apiFetch(`/api/payouts/${payout.id}`, { method: 'DELETE' });
           App.closeModal('deleteConfirmModal');
-          App.showToast('Payout deleted successfully', 'success');
+          const delToast = window.I18n ? window.I18n.t('toast_payout_deleted', 'Payout deleted') : 'Payout deleted';
+          App.showToast(delToast, 'success');
           this.load();
           if (App.state.currentTab === 'dashboard') Dashboard.load();
         } catch (err) {

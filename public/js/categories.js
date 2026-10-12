@@ -61,13 +61,20 @@ const Categories = {
       return;
     }
 
+    const viewHintText = window.I18n ? window.I18n.t('cat_view_expenses', 'View expenses') : 'View expenses';
+    const arrowSym = window.I18n && window.I18n.isUrdu() ? '‹' : '›';
+
     container.innerHTML = categories.map((cat) => {
       const isDefault = cat.is_default === 1;
       const count = cat.expense_count || 0;
       const total = cat.total_spent || 0;
+      const displayName = window.I18n ? window.I18n.getCategoryName(cat.name) : cat.name;
+      const countText = window.I18n && window.I18n.isUrdu()
+        ? `<strong>${count}</strong> اخراجات (${App.formatCurrency(total)})`
+        : `<strong>${count}</strong> ${count === 1 ? 'expense' : 'expenses'} (${App.formatCurrency(total)})`;
 
       return `
-        <div class="category-card category-card-interactive" data-id="${cat.id}" role="button" tabindex="0" title="Click to view all ${this.escapeHtml(cat.name)} expenses">
+        <div class="category-card category-card-interactive" data-id="${cat.id}" role="button" tabindex="0" title="${displayName}">
           ${!isDefault && count === 0 ? `
             <button class="category-card-delete delete-cat-btn" data-id="${cat.id}" data-name="${this.escapeHtml(cat.name)}" title="Delete Category" aria-label="Delete">
               ${window.Icons ? window.Icons.get('close', '', 14) : '✕'}
@@ -77,13 +84,13 @@ const Categories = {
           <div class="category-card-icon" style="background-color: ${cat.color || '#6366f1'}">
             ${cat.icon || '🏷️'}
           </div>
-          <div class="category-card-name">${this.escapeHtml(cat.name)}</div>
+          <div class="category-card-name">${this.escapeHtml(displayName)}</div>
           <div class="category-card-count">
-            <strong>${count}</strong> ${count === 1 ? 'expense' : 'expenses'} (${App.formatCurrency(total)})
+            ${countText}
           </div>
           <div class="category-card-view-hint">
-            <span>View expenses</span>
-            <span class="hint-arrow">›</span>
+            <span>${viewHintText}</span>
+            <span class="hint-arrow">${arrowSym}</span>
           </div>
         </div>
       `;
@@ -123,6 +130,7 @@ const Categories = {
 
   async openCategoryExpenses(cat) {
     this.currentCategory = cat;
+    const catDisplayName = window.I18n ? window.I18n.getCategoryName(cat.name) : cat.name;
 
     const iconEl = document.getElementById('catExpHeaderIcon');
     if (iconEl) {
@@ -132,10 +140,18 @@ const Categories = {
     }
 
     const titleEl = document.getElementById('catExpModalTitle');
-    if (titleEl) titleEl.textContent = `${cat.name} Expenses`;
+    if (titleEl) {
+      titleEl.textContent = window.I18n && window.I18n.isUrdu()
+        ? `${catDisplayName} کے اخراجات`
+        : `${cat.name} Expenses`;
+    }
 
     const subtitleEl = document.getElementById('catExpModalSubtitle');
-    if (subtitleEl) subtitleEl.textContent = `${cat.expense_count || 0} expenses recorded`;
+    if (subtitleEl) {
+      subtitleEl.textContent = window.I18n && window.I18n.isUrdu()
+        ? `${cat.expense_count || 0} اخراجات درج ہیں`
+        : `${cat.expense_count || 0} expenses recorded`;
+    }
 
     const totalEl = document.getElementById('catExpTotalSpent');
     if (totalEl) totalEl.textContent = App.formatCurrency(cat.total_spent || 0);
@@ -208,24 +224,37 @@ const Categories = {
     const totalEl = document.getElementById('catExpTotalSpent');
     const countEl = document.getElementById('catExpCount');
     const subtitleEl = document.getElementById('catExpModalSubtitle');
+    const catDisplayName = window.I18n ? window.I18n.getCategoryName(cat.name) : cat.name;
 
     const totalSpent = expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     if (totalEl) totalEl.textContent = App.formatCurrency(totalSpent);
     if (countEl) countEl.textContent = expenses.length;
-    if (subtitleEl) subtitleEl.textContent = `${expenses.length} ${expenses.length === 1 ? 'expense' : 'expenses'} recorded`;
+    if (subtitleEl) {
+      subtitleEl.textContent = window.I18n && window.I18n.isUrdu()
+        ? `${expenses.length} اخراجات درج ہیں`
+        : `${expenses.length} ${expenses.length === 1 ? 'expense' : 'expenses'} recorded`;
+    }
 
     if (!expenses || expenses.length === 0) {
+      const emptyTitle = window.I18n && window.I18n.isUrdu()
+        ? `${catDisplayName} میں کوئی خرچہ نہیں ہے`
+        : `No Expenses in ${this.escapeHtml(cat.name)}`;
+      const emptyDesc = window.I18n ? window.I18n.t('cat_modal_no_expenses', 'No purchase records found for this category yet.') : 'No purchase records found for this category yet.';
+      const emptyBtnText = window.I18n && window.I18n.isUrdu()
+        ? `+ نیا ${catDisplayName} خرچہ درج کریں`
+        : `+ Add First ${this.escapeHtml(cat.name)} Expense`;
+
       listContainer.innerHTML = `
         <div class="empty-state" style="padding: 40px 20px;">
           <div class="empty-state-icon" style="font-size: 2.2rem; margin-bottom: 8px;">
             ${cat.icon || '🏷️'}
           </div>
-          <h4 style="margin: 0 0 6px 0;">No Expenses in ${this.escapeHtml(cat.name)}</h4>
+          <h4 style="margin: 0 0 6px 0;">${emptyTitle}</h4>
           <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0 0 16px 0;">
-            No purchase records found for this category yet.
+            ${emptyDesc}
           </p>
           <button type="button" class="btn btn-primary btn-sm" id="catModalEmptyAddBtn">
-            + Add First ${this.escapeHtml(cat.name)} Expense
+            ${emptyBtnText}
           </button>
         </div>
       `;
@@ -244,7 +273,9 @@ const Categories = {
 
     listContainer.innerHTML = `
       <div class="cat-expenses-list">
-        ${expenses.map((item) => `
+        ${expenses.map((item) => {
+          const unitStr = item.unit ? (window.I18n ? window.I18n.getUnitName(item.unit) : item.unit) : '';
+          return `
           <div class="cat-expense-card" data-id="${item.id}">
             <div class="cat-expense-card-left">
               <div class="cat-expense-date-badge">
@@ -252,7 +283,7 @@ const Categories = {
               </div>
               <div class="cat-expense-title">${this.escapeHtml(item.item_name)}</div>
               <div class="cat-expense-details">
-                ${item.quantity ? `<span>${item.quantity} ${item.unit || ''}</span>` : ''}
+                ${item.quantity ? `<span>${item.quantity} ${this.escapeHtml(unitStr)}</span>` : ''}
                 ${item.quantity && item.vendor ? '<span class="sep">•</span>' : ''}
                 ${item.vendor ? `<span>🏪 ${this.escapeHtml(item.vendor)}</span>` : ''}
                 ${(item.quantity || item.vendor) && item.notes ? '<span class="sep">•</span>' : ''}
@@ -274,7 +305,7 @@ const Categories = {
               </div>
             </div>
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>
     `;
 
@@ -298,13 +329,18 @@ const Categories = {
         const id = parseInt(btn.dataset.id, 10);
         const item = expenses.find((x) => x.id === id);
         if (item) {
+          const delMsg = window.I18n && window.I18n.isUrdu()
+            ? `کیا آپ واقعی <strong>"${this.escapeHtml(item.item_name)}"</strong> کا خرچہ (<strong class="text-danger">${App.formatCurrency(item.amount)}</strong>) حذف کرنا چاہتے ہیں؟`
+            : `Are you sure you want to delete <strong>"${this.escapeHtml(item.item_name)}"</strong> for <strong class="text-danger">${App.formatCurrency(item.amount)}</strong>?`;
+
           App.promptDeleteConfirm(
-            `Are you sure you want to delete <strong>"${this.escapeHtml(item.item_name)}"</strong> for <strong class="text-danger">${App.formatCurrency(item.amount)}</strong>?`,
+            delMsg,
             async () => {
               try {
                 await App.apiFetch(`/api/expenses/${item.id}`, { method: 'DELETE' });
                 App.closeModal('deleteConfirmModal');
-                App.showToast('Expense deleted successfully', 'success');
+                const delToast = window.I18n ? window.I18n.t('toast_expense_deleted', 'Expense deleted') : 'Expense deleted';
+                App.showToast(delToast, 'success');
 
                 // Invalidate caches
                 delete this.categoryExpensesCache[cat.id];
@@ -352,13 +388,21 @@ const Categories = {
   },
 
   promptDelete(id, name) {
+    const displayName = window.I18n ? window.I18n.getCategoryName(name) : name;
+    const confirmMsg = window.I18n && window.I18n.isUrdu()
+      ? `کیا آپ واقعی کیٹیگری <strong>"${this.escapeHtml(displayName)}"</strong> حذف کرنا چاہتے ہیں؟`
+      : `Are you sure you want to delete category <strong>"${this.escapeHtml(name)}"</strong>?`;
+
     App.promptDeleteConfirm(
-      `Are you sure you want to delete category <strong>"${this.escapeHtml(name)}"</strong>?`,
+      confirmMsg,
       async () => {
         try {
           await App.apiFetch(`/api/categories/${id}`, { method: 'DELETE' });
           App.closeModal('deleteConfirmModal');
-          App.showToast(`Category "${name}" deleted`, 'success');
+          const toastMsg = window.I18n && window.I18n.isUrdu()
+            ? `کیٹیگری "${displayName}" حذف کر دی گئی`
+            : `Category "${name}" deleted`;
+          App.showToast(toastMsg, 'success');
           this.load();
           if (App.loadCategories) App.loadCategories();
         } catch (err) {
