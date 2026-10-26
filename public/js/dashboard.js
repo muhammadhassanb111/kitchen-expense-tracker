@@ -6,10 +6,27 @@
 const Dashboard = {
   cachedData: {},
 
+  init() {
+    const quickBtn = document.getElementById('quickAddIncomeBtn');
+    if (quickBtn) {
+      quickBtn.addEventListener('click', () => {
+        if (window.Payouts) window.Payouts.openAddModal('direct_order');
+      });
+    }
+
+    const shareBtn = document.getElementById('shareTodayWhatsappBtn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        this.shareTodaySummary();
+      });
+    }
+  },
+
   async load() {
     const cacheKey = `${App.state.startDate}_${App.state.endDate}`;
     if (this.cachedData[cacheKey]) {
       const cached = this.cachedData[cacheKey];
+      if (cached.todayPulse) this.renderTodayPulse(cached.todayPulse);
       this.renderSummary(cached.summary, cached.dailyTrend);
       this.renderDonutChart(cached.categoryBreakdown, cached.summary.totalSpent);
       this.renderTrendChart(cached.dailyTrend);
@@ -20,12 +37,60 @@ const Dashboard = {
       const url = `/api/dashboard/stats?startDate=${App.state.startDate}&endDate=${App.state.endDate}`;
       const data = await App.apiFetch(url);
       this.cachedData[cacheKey] = data;
+      if (data.todayPulse) this.renderTodayPulse(data.todayPulse);
       this.renderSummary(data.summary, data.dailyTrend);
       this.renderDonutChart(data.categoryBreakdown, data.summary.totalSpent);
       this.renderTrendChart(data.dailyTrend);
       this.renderRecentExpenses(data.recentExpenses);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
+    }
+  },
+
+  renderTodayPulse(todayPulse) {
+    if (!todayPulse) return;
+    const directEl = document.getElementById('pulseTodayDirect');
+    const spentEl = document.getElementById('pulseTodaySpent');
+    const profitEl = document.getElementById('pulseTodayProfit');
+    const dateBadge = document.getElementById('pulseTodayDateBadge');
+
+    if (dateBadge) {
+      dateBadge.textContent = App.formatDate(todayPulse.date);
+    }
+
+    if (directEl) App.animateCount('pulseTodayDirect', todayPulse.directIncome, `${App.state.currency} `);
+    if (spentEl) App.animateCount('pulseTodaySpent', todayPulse.spent, `${App.state.currency} `);
+
+    if (profitEl) {
+      const isProfit = todayPulse.netProfit >= 0;
+      const prefix = isProfit ? `+ ${App.state.currency} ` : `- ${App.state.currency} `;
+      profitEl.className = isProfit ? 'pulse-metric-val text-success' : 'pulse-metric-val text-danger';
+      App.animateCount('pulseTodayProfit', Math.abs(todayPulse.netProfit), prefix);
+    }
+  },
+
+  shareTodaySummary() {
+    const firstCached = this.cachedData ? Object.values(this.cachedData)[0] : null;
+    const todayData = (firstCached && firstCached.todayPulse) || {
+      date: App.todayString(),
+      spent: 0,
+      directIncome: 0,
+      netProfit: 0
+    };
+    const curr = App.state.currency || 'PKR';
+    const isUrdu = window.I18n && window.I18n.isUrdu();
+    const profitSign = todayData.netProfit >= 0 ? '+' : '-';
+    const text = isUrdu
+      ? `🍳 *کچن روزانہ خلاصہ (${App.formatDate(todayData.date)})*\n💵 *آمدنی (ڈائریکٹ سیل):* ${curr} ${todayData.directIncome.toLocaleString()}\n🛒 *راشن کے اخراجات:* ${curr} ${todayData.spent.toLocaleString()}\n✨ *آج کا خالص منافع:* ${profitSign} ${curr} ${Math.abs(todayData.netProfit).toLocaleString()}`
+      : `🍳 *Kitchen Daily Summary (${App.formatDate(todayData.date)})*\n💵 *Direct Sales:* ${curr} ${todayData.directIncome.toLocaleString()}\n🛒 *Grocery Expenses:* ${curr} ${todayData.spent.toLocaleString()}\n✨ *Net Daily Profit:* ${profitSign} ${curr} ${Math.abs(todayData.netProfit).toLocaleString()}`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      const msg = window.I18n ? window.I18n.t('toast_copied_whatsapp', 'Summary copied to clipboard!') : 'Summary copied to clipboard!';
+      App.showToast(msg, 'success');
+    }
+    if (navigator.share) {
+      navigator.share({ title: "Today's Kitchen Summary", text }).catch(() => {});
     }
   },
 
@@ -296,3 +361,4 @@ const Dashboard = {
 };
 
 window.Dashboard = Dashboard;
+document.addEventListener('DOMContentLoaded', () => Dashboard.init());

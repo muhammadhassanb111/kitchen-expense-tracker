@@ -439,9 +439,17 @@ app.delete('/api/expenses/:id', (req, res) => {
 // -------------------------------------------------------------
 app.get('/api/payouts', (req, res) => {
   try {
-    const payouts = db.prepare(`
-      SELECT * FROM payouts ORDER BY payout_date DESC, id DESC
-    `).all();
+    const { type } = req.query;
+    let query = 'SELECT * FROM payouts WHERE 1=1';
+    const params = [];
+
+    if (type && type !== 'all') {
+      query += ' AND income_type = ?';
+      params.push(type);
+    }
+    query += ' ORDER BY payout_date DESC, id DESC';
+
+    const payouts = db.prepare(query).all(...params);
 
     const expenseStmt = db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total_expenses,
@@ -458,6 +466,8 @@ app.get('/api/payouts', (req, res) => {
 
       return {
         ...p,
+        income_type: p.income_type || 'weekly_payout',
+        payment_method: p.payment_method || 'cash',
         total_expenses: totalExpenses,
         expense_count: stats.expense_count,
         net_profit: netProfit,
@@ -473,30 +483,40 @@ app.get('/api/payouts', (req, res) => {
 
 app.post('/api/payouts', (req, res) => {
   try {
-    const { payout_date, amount, period_start, period_end, notes } = req.body;
+    const { payout_date, amount, period_start, period_end, notes, income_type, payment_method } = req.body;
 
-    if (!payout_date) return res.status(400).json({ error: 'Payout date is required' });
+    if (!payout_date) return res.status(400).json({ error: 'Date is required' });
     if (amount === undefined || amount === null || isNaN(amount) || Number(amount) < 0) {
-      return res.status(400).json({ error: 'Valid payout amount is required' });
+      return res.status(400).json({ error: 'Valid amount is required' });
     }
-    if (!period_start || !period_end) {
-      return res.status(400).json({ error: 'Period start and end dates are required' });
-    }
-    if (period_start > period_end) {
-      return res.status(400).json({ error: 'Period start date cannot be after end date' });
+
+    const type = (income_type === 'direct_order') ? 'direct_order' : 'weekly_payout';
+    const method = payment_method || (type === 'direct_order' ? 'cash' : 'online');
+    const start = (type === 'direct_order') ? (period_start || payout_date) : period_start;
+    const end = (type === 'direct_order') ? (period_end || payout_date) : period_end;
+
+    if (type === 'weekly_payout') {
+      if (!start || !end) {
+        return res.status(400).json({ error: 'Period start and end dates are required for weekly payouts' });
+      }
+      if (start > end) {
+        return res.status(400).json({ error: 'Period start date cannot be after end date' });
+      }
     }
 
     const insert = db.prepare(`
-      INSERT INTO payouts (payout_date, amount, period_start, period_end, notes)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO payouts (payout_date, amount, period_start, period_end, notes, income_type, payment_method)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = insert.run(
       payout_date,
       Number(amount),
-      period_start,
-      period_end,
-      notes ? notes.trim() : null
+      start,
+      end,
+      notes ? notes.trim() : null,
+      type,
+      method
     );
 
     const created = db.prepare('SELECT * FROM payouts WHERE id = ?').get(result.lastInsertRowid);
@@ -508,7 +528,7 @@ app.post('/api/payouts', (req, res) => {
     const netProfit = created.amount - stats.total_expenses;
     const profitMarginPct = created.amount > 0 ? ((netProfit / created.amount) * 100).toFixed(1) : 0;
 
-    backupService.triggerAutoBackup(`payout added: Rs. ${created.amount} (${created.period_start} to ${created.period_end})`);
+    backupService.triggerAutoBackup(`income added: Rs. ${created.amount} (${type})`);
     res.status(201).json({
       ...created,
       total_expenses: stats.total_expenses,
@@ -524,27 +544,35 @@ app.post('/api/payouts', (req, res) => {
 app.put('/api/payouts/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { payout_date, amount, period_start, period_end, notes } = req.body;
+    const { payout_date, amount, period_start, period_end, notes, income_type, payment_method } = req.body;
 
-    const existing = db.prepare('SELECT id FROM payouts WHERE id = ?').get(id);
-    if (!existing) return res.status(404).json({ error: 'Payout not found' });
+    const existing = db.prepare('SELECT id, income_type, payment_method FROM payouts WHERE id = ?').get(id);
+    if (!existing) return res.status(404).json({ error: 'Record not found' });
 
-    if (!payout_date) return res.status(400).json({ error: 'Payout date is required' });
+    if (!payout_date) return res.status(400).json({ error: 'Date is required' });
     if (amount === undefined || amount === null || isNaN(amount) || Number(amount) < 0) {
-      return res.status(400).json({ error: 'Valid payout amount is required' });
+      return res.status(400).json({ error: 'Valid amount is required' });
     }
-    if (!period_start || !period_end) {
-      return res.status(400).json({ error: 'Period start and end dates are required' });
-    }
-    if (period_start > period_end) {
-      return res.status(400).json({ error: 'Period start date cannot be after end date' });
+
+    const type = income_type || existing.income_type || 'weekly_payout';
+    const method = payment_method || existing.payment_method || (type === 'direct_order' ? 'cash' : 'online');
+    const start = (type === 'direct_order') ? (period_start || payout_date) : period_start;
+    const end = (type === 'direct_order') ? (period_end || payout_date) : period_end;
+
+    if (type === 'weekly_payout') {
+      if (!start || !end) {
+        return res.status(400).json({ error: 'Period start and end dates are required for weekly payouts' });
+      }
+      if (start > end) {
+        return res.status(400).json({ error: 'Period start date cannot be after end date' });
+      }
     }
 
     db.prepare(`
       UPDATE payouts
-      SET payout_date = ?, amount = ?, period_start = ?, period_end = ?, notes = ?
+      SET payout_date = ?, amount = ?, period_start = ?, period_end = ?, notes = ?, income_type = ?, payment_method = ?
       WHERE id = ?
-    `).run(payout_date, Number(amount), period_start, period_end, notes ? notes.trim() : null, id);
+    `).run(payout_date, Number(amount), start, end, notes ? notes.trim() : null, type, method, id);
 
     const updated = db.prepare('SELECT * FROM payouts WHERE id = ?').get(id);
     const stats = db.prepare(`
@@ -555,7 +583,7 @@ app.put('/api/payouts/:id', (req, res) => {
     const netProfit = updated.amount - stats.total_expenses;
     const profitMarginPct = updated.amount > 0 ? ((netProfit / updated.amount) * 100).toFixed(1) : 0;
 
-    backupService.triggerAutoBackup(`payout updated: Rs. ${updated.amount}`);
+    backupService.triggerAutoBackup(`income updated: Rs. ${updated.amount}`);
     res.json({
       ...updated,
       total_expenses: stats.total_expenses,
@@ -662,6 +690,20 @@ app.get('/api/dashboard/stats', (req, res) => {
       LIMIT 5
     `).all(...params);
 
+    // 6. Today's Kitchen Pulse (Real-time today stats)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todaySpentRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as spent FROM expenses WHERE date = ?').get(todayStr);
+    const todayDirectRow = db.prepare("SELECT COALESCE(SUM(amount), 0) as direct_income FROM payouts WHERE payout_date = ? AND income_type = 'direct_order'").get(todayStr);
+    const todayTotalIncomeRow = db.prepare("SELECT COALESCE(SUM(amount), 0) as total_income FROM payouts WHERE payout_date = ?").get(todayStr);
+
+    const todayPulse = {
+      date: todayStr,
+      spent: todaySpentRow.spent,
+      directIncome: todayDirectRow.direct_income,
+      totalIncome: todayTotalIncomeRow.total_income,
+      netProfit: todayDirectRow.direct_income - todaySpentRow.spent
+    };
+
     res.json({
       summary: {
         totalSpent,
@@ -672,7 +714,8 @@ app.get('/api/dashboard/stats', (req, res) => {
       },
       categoryBreakdown: categoryWithPct,
       dailyTrend,
-      recentExpenses
+      recentExpenses,
+      todayPulse
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

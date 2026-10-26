@@ -69,7 +69,7 @@ function initDatabase() {
     );
   `);
 
-  // 4. Payouts table
+  // 4. Payouts / Income table
   currentDb.exec(`
     CREATE TABLE IF NOT EXISTS payouts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,6 +78,8 @@ function initDatabase() {
       period_start TEXT NOT NULL,
       period_end TEXT NOT NULL,
       notes TEXT,
+      income_type TEXT DEFAULT 'weekly_payout',
+      payment_method TEXT DEFAULT 'cash',
       created_at TEXT DEFAULT (datetime('now', 'localtime'))
     );
 
@@ -85,7 +87,21 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
     CREATE INDEX IF NOT EXISTS idx_expenses_created_at ON expenses(created_at);
     CREATE INDEX IF NOT EXISTS idx_payouts_payout_date ON payouts(payout_date);
+    CREATE INDEX IF NOT EXISTS idx_payouts_income_type ON payouts(income_type);
   `);
+
+  // Migrate payouts schema if missing income_type or payment_method
+  try {
+    const payoutCols = currentDb.prepare("PRAGMA table_info(payouts)").all().map(c => c.name);
+    if (!payoutCols.includes('income_type')) {
+      currentDb.prepare("ALTER TABLE payouts ADD COLUMN income_type TEXT DEFAULT 'weekly_payout'").run();
+    }
+    if (!payoutCols.includes('payment_method')) {
+      currentDb.prepare("ALTER TABLE payouts ADD COLUMN payment_method TEXT DEFAULT 'cash'").run();
+    }
+  } catch (err) {
+    console.error('Payouts migration notice:', err.message);
+  }
 
   // Initialize default settings if not present
   const insertSetting = currentDb.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

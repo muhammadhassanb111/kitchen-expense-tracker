@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kitchen Expense Tracker</title>
-  <link rel="stylesheet" href="css/style.css?v=3.9">
+  <link rel="stylesheet" href="css/style.css?v=4.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
 </head>
 <body>
@@ -150,6 +150,46 @@
 
           <!-- ================= TAB: DASHBOARD ================= -->
           <section id="tab-dashboard" class="tab-pane active">
+            <!-- Today's Kitchen Pulse Card (Daily Orders vs Expenses) -->
+            <div class="today-pulse-card" id="todayPulseCard">
+              <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.25rem;">⚡</span>
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;" data-i18n="today_pulse_title">Today's Kitchen Pulse</h3>
+                    <span class="badge" id="pulseTodayDateBadge" style="background: var(--bg-chip); color: var(--text-muted); font-weight: 700;">Today</span>
+                  </div>
+                  <p style="margin: 4px 0 0 0; font-size: 0.825rem; color: var(--text-muted);" data-i18n="today_pulse_desc">Real-time daily direct orders, groceries spent, and cash profit.</p>
+                </div>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-primary btn-sm" id="quickAddIncomeBtn" type="button" style="display: flex; align-items: center; gap: 6px;">
+                    <span data-icon="plus" data-size="16"></span>
+                    <span data-i18n="btn_add_today_income">+ Add Today's Income</span>
+                  </button>
+                  <button class="btn btn-outline btn-sm" id="shareTodayWhatsappBtn" type="button" style="display: flex; align-items: center; gap: 6px;" title="Share WhatsApp Summary">
+                    <span>📲</span>
+                    <span data-i18n="btn_share_whatsapp">Share</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="today-pulse-metrics">
+                <div class="pulse-metric-box">
+                  <label data-i18n="pulse_today_direct">Today's Direct Sales</label>
+                  <div class="pulse-metric-val text-success" id="pulseTodayDirect">PKR 0</div>
+                </div>
+                <div class="pulse-metric-box">
+                  <label data-i18n="pulse_today_spent">Today's Groceries</label>
+                  <div class="pulse-metric-val text-danger" id="pulseTodaySpent">PKR 0</div>
+                </div>
+                <div class="pulse-metric-box">
+                  <label data-i18n="pulse_today_profit">Today's Net Profit</label>
+                  <div class="pulse-metric-val" id="pulseTodayProfit">PKR 0</div>
+                </div>
+              </div>
+            </div>
+
             <!-- 4 Bento KPI Metric Cards -->
             <div class="bento-stats-grid">
               <div class="stat-card">
@@ -309,13 +349,34 @@
           <section id="tab-payouts" class="tab-pane">
             <div class="section-header-row">
               <div>
-                <h2 data-i18n="payouts_title">Payouts & Profit Comparison</h2>
-                <p class="section-desc" data-i18n="payouts_desc">Track weekly / bi-weekly payments received from delivery channels and automatically compare against grocery costs incurred during that exact date period.</p>
+                <h2 data-i18n="payouts_title">Income & Profit Tracking</h2>
+                <p class="section-desc" data-i18n="payouts_desc">Record daily direct orders and weekly Foodpanda payouts to compare against grocery costs and reveal your real profit margin.</p>
               </div>
-              <button id="openAddPayoutModalBtn" class="btn btn-primary">
-                <span data-icon="plus" data-size="18"></span>
-                <span data-i18n="btn_record_payout">Record Payout</span>
-              </button>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="openAddDailyIncomeBtn" class="btn btn-primary" type="button">
+                  <span data-icon="plus" data-size="18"></span>
+                  <span data-i18n="btn_add_daily_income">+ Daily Direct Income</span>
+                </button>
+                <button id="openAddPayoutModalBtn" class="btn btn-outline" type="button">
+                  <span data-icon="calendar" data-size="18"></span>
+                  <span data-i18n="btn_record_payout">+ Weekly Payout</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Income Type Filter Toggle -->
+            <div style="margin: 16px 0 20px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div class="income-pill-toggle" id="incomeFilterToggle">
+                <button type="button" class="income-pill-btn active" data-filter="all">
+                  <span data-i18n="filter_all_income">All Income</span>
+                </button>
+                <button type="button" class="income-pill-btn" data-filter="direct_order">
+                  <span>💵</span> <span data-i18n="filter_direct_income">Direct Orders</span>
+                </button>
+                <button type="button" class="income-pill-btn" data-filter="weekly_payout">
+                  <span>📅</span> <span data-i18n="filter_weekly_payout">Weekly Foodpanda</span>
+                </button>
+              </div>
             </div>
 
             <div id="payoutsListContainer" class="payouts-grid">
@@ -597,51 +658,81 @@
       </div>
     </div>
 
-    <!-- Modal: Add / Edit Payout -->
+    <!-- Modal: Add / Edit Income & Payout -->
     <div id="payoutModal" class="modal-overlay">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3 id="payoutModalTitle" data-i18n="modal_record_payout_title">Record Payout</h3>
+          <h3 id="payoutModalTitle" data-i18n="modal_record_income_title">Record Income / Payout</h3>
           <button class="modal-close-btn" data-close-modal="payoutModal">✕</button>
         </div>
         <form id="payoutForm">
           <input type="hidden" id="payoutIdInput">
+          <input type="hidden" id="incomeTypeInput" value="direct_order">
 
           <div class="modal-body">
+            <!-- Income Source Toggle (Direct Order vs Weekly Payout) -->
+            <div class="form-group" id="modalIncomeTypeGroup">
+              <label><span data-i18n="form_income_type">Income Source</span> <span class="required">*</span></label>
+              <div class="income-pill-toggle" id="modalIncomeTypeToggle">
+                <button type="button" class="income-pill-btn active" data-type="direct_order" id="typeBtnDirect">
+                  <span>💵</span> <span data-i18n="income_type_direct">Daily Direct Order</span>
+                </button>
+                <button type="button" class="income-pill-btn" data-type="weekly_payout" id="typeBtnWeekly">
+                  <span>📅</span> <span data-i18n="income_type_weekly">Weekly Foodpanda</span>
+                </button>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label for="payoutDateInput"><span data-i18n="form_payout_date">Payout Date</span> <span class="required">*</span></label>
+              <label for="payoutDateInput"><span data-i18n="form_payout_date">Date Received</span> <span class="required">*</span></label>
               <input type="date" id="payoutDateInput" required>
             </div>
 
             <div class="form-group">
-              <label for="payoutAmountInput"><span data-i18n="form_payout_amount">Payout Amount</span> (<span class="currency-label">PKR</span>) <span class="required">*</span></label>
-              <input type="number" id="payoutAmountInput" step="any" min="0" placeholder="0.00" class="amount-large-input" required>
+              <label for="payoutAmountInput"><span data-i18n="form_payout_amount">Amount</span> (<span class="currency-label">PKR</span>) <span class="required">*</span></label>
+              <input type="number" id="payoutAmountInput" step="any" min="0.01" placeholder="0.00" class="amount-large-input" required>
             </div>
 
-            <div class="form-group">
-              <label><span data-i18n="form_period_covered">Period Covered (1-2 Weeks)</span> <span class="required">*</span></label>
+            <!-- Payment Method (For Direct Orders) -->
+            <div class="form-group" id="paymentMethodGroup">
+              <label><span data-i18n="form_payment_method">Payment Mode</span></label>
+              <div style="display: flex; gap: 10px;">
+                <label class="lang-radio-card active" style="min-width: 100px; padding: 10px 14px; cursor: pointer;" id="pmCashLabel">
+                  <input type="radio" name="payment_method" value="cash" id="pmCash" checked>
+                  <span style="font-weight: 700;">💵 <span data-i18n="payment_cash">Cash</span></span>
+                </label>
+                <label class="lang-radio-card" style="min-width: 100px; padding: 10px 14px; cursor: pointer;" id="pmOnlineLabel">
+                  <input type="radio" name="payment_method" value="online" id="pmOnline">
+                  <span style="font-weight: 700;">📲 <span data-i18n="payment_online">Online</span></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Period Covered (Only for Weekly Foodpanda Payouts) -->
+            <div class="form-group" id="payoutPeriodGroup" style="display: none;">
+              <label><span data-i18n="form_period_covered">Period Covered (Foodpanda Cycle)</span> <span class="required">*</span></label>
               <p class="text-muted text-xs mb-1" data-i18n="form_period_hint">Expenses in this window are automatically subtracted to reveal your net profit.</p>
               <div class="form-row">
                 <div class="form-group flex-1">
                   <label for="payoutPeriodStart" class="text-xs" data-i18n="form_start_date">Start Date</label>
-                  <input type="date" id="payoutPeriodStart" required>
+                  <input type="date" id="payoutPeriodStart">
                 </div>
                 <div class="form-group flex-1">
                   <label for="payoutPeriodEnd" class="text-xs" data-i18n="form_end_date">End Date</label>
-                  <input type="date" id="payoutPeriodEnd" required>
+                  <input type="date" id="payoutPeriodEnd">
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label for="payoutNotesInput"><span data-i18n="form_payout_channel">Channel / Note</span> <span class="text-muted" data-i18n="optional_label">(Optional)</span></label>
-              <input type="text" id="payoutNotesInput" placeholder="e.g. Foodpanda Week 42, Catering Order #10" data-i18n-placeholder="form_payout_channel_placeholder">
+              <label for="payoutNotesInput"><span data-i18n="form_payout_channel">Customer / Channel / Note</span> <span class="text-muted" data-i18n="optional_label">(Optional)</span></label>
+              <input type="text" id="payoutNotesInput" placeholder="e.g. Walk-in cash, Catering order, Foodpanda Week 42" data-i18n-placeholder="form_payout_channel_placeholder">
             </div>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-outline" data-close-modal="payoutModal" data-i18n="btn_cancel">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="savePayoutBtn" data-i18n="btn_save_payout">Save Payout</button>
+            <button type="submit" class="btn btn-primary" id="savePayoutBtn" data-i18n="btn_save_payout">Save Income</button>
           </div>
         </form>
       </div>
@@ -787,12 +878,12 @@
   </div>
 
   <!-- Offline JavaScript Modules -->
-  <script src="js/icons.js?v=3.9"></script>
-  <script src="js/i18n.js?v=3.9"></script>
-  <script src="js/app.js?v=3.9"></script>
-  <script src="js/dashboard.js?v=3.9"></script>
-  <script src="js/expenses.js?v=3.9"></script>
-  <script src="js/payouts.js?v=3.9"></script>
-  <script src="js/categories.js?v=3.9"></script>
+  <script src="js/icons.js?v=4.0"></script>
+  <script src="js/i18n.js?v=4.0"></script>
+  <script src="js/app.js?v=4.0"></script>
+  <script src="js/dashboard.js?v=4.0"></script>
+  <script src="js/expenses.js?v=4.0"></script>
+  <script src="js/payouts.js?v=4.0"></script>
+  <script src="js/categories.js?v=4.0"></script>
 </body>
 </html>
