@@ -94,25 +94,44 @@ function initDatabase() {
   insertSetting.run('pin_enabled', '1');
   insertSetting.run('app_pin', '7327');
 
-  // Initialize default categories if table is empty
-  const categoryCount = currentDb.prepare('SELECT COUNT(*) as count FROM categories').get().count;
-  if (categoryCount === 0) {
-    const defaultCategories = [
-      { name: 'Vegetables', color: '#10b981', icon: '🥦', is_default: 1 },
-      { name: 'Meat/Chicken', color: '#ef4444', icon: '🍗', is_default: 1 },
-      { name: 'Oil & Ghee', color: '#f59e0b', icon: '🛢️', is_default: 1 },
-      { name: 'Spices', color: '#d97706', icon: '🌶️', is_default: 1 },
-      { name: 'Dairy', color: '#06b6d4', icon: '🥛', is_default: 1 },
-      { name: 'Packaging', color: '#8b5cf6', icon: '📦', is_default: 1 },
-      { name: 'Gas/Fuel', color: '#64748b', icon: '🔥', is_default: 1 },
-      { name: 'Other', color: '#6b7280', icon: '📋', is_default: 1 }
-    ];
+  // Initialize and migrate to standard 6 simplified categories
+  const standardCategories = [
+    { name: 'Vegetables', color: '#10b981', icon: '🥦', is_default: 1 },
+    { name: 'Milk - Cheese - Khoya', color: '#06b6d4', icon: '🥛', is_default: 1 },
+    { name: 'Meat/Chicken', color: '#ef4444', icon: '🍗', is_default: 1 },
+    { name: 'Oil/Ghee', color: '#f59e0b', icon: '🛢️', is_default: 1 },
+    { name: 'Packing', color: '#8b5cf6', icon: '📦', is_default: 1 },
+    { name: 'Spices', color: '#d97706', icon: '🌶️', is_default: 1 }
+  ];
 
-    const insertCat = currentDb.prepare('INSERT INTO categories (name, color, icon, is_default) VALUES (@name, @color, @icon, @is_default)');
-    const insertMany = currentDb.transaction((cats) => {
-      for (const cat of cats) insertCat.run(cat);
-    });
-    insertMany(defaultCategories);
+  try {
+    // 1. Rename existing legacy category names
+    currentDb.prepare(`UPDATE categories SET name = 'Milk - Cheese - Khoya', icon = '🥛', color = '#06b6d4' WHERE name = 'Dairy'`).run();
+    currentDb.prepare(`UPDATE categories SET name = 'Oil/Ghee', icon = '🛢️', color = '#f59e0b' WHERE name = 'Oil & Ghee'`).run();
+    currentDb.prepare(`UPDATE categories SET name = 'Packing', icon = '📦', color = '#8b5cf6' WHERE name = 'Packaging'`).run();
+
+    // 2. Remove non-standard categories and their associated records to keep only the requested 6
+    const allowed = ['Vegetables', 'Milk - Cheese - Khoya', 'Meat/Chicken', 'Oil/Ghee', 'Packing', 'Spices'];
+    const placeholders = allowed.map(() => '?').join(',');
+
+    currentDb.prepare(`
+      DELETE FROM expenses 
+      WHERE category_id IN (
+        SELECT id FROM categories WHERE name NOT IN (${placeholders})
+      )
+    `).run(...allowed);
+
+    currentDb.prepare(`
+      DELETE FROM categories WHERE name NOT IN (${placeholders})
+    `).run(...allowed);
+
+    // 3. Insert any missing standard categories
+    const insertCat = currentDb.prepare('INSERT OR IGNORE INTO categories (name, color, icon, is_default) VALUES (@name, @color, @icon, @is_default)');
+    for (const cat of standardCategories) {
+      insertCat.run(cat);
+    }
+  } catch (err) {
+    console.error('Category migration notice:', err.message);
   }
 }
 

@@ -12,21 +12,17 @@ const I18n = {
 
   // Dictionary of Category Translations (English -> Urdu)
   categoriesUrdu: {
-    'dairy': 'دودھ و ڈائری',
+    'vegetables': 'سبزیاں',
+    'milk - cheese - khoya': 'دودھ - پنیر - کھویا',
+    'dairy': 'دودھ - پنیر - کھویا',
     'meat/chicken': 'گوشت و مرغی',
     'meat': 'گوشت و مرغی',
-    'chicken': 'مرغی و گوشت',
-    'vegetables': 'تازہ سبزیاں',
-    'grocery & spices': 'راشن و مصالحہ جات',
-    'spices': 'مصالحہ جات',
+    'chicken': 'گوشت و مرغی',
+    'oil/ghee': 'تیل و گھی',
     'oil & ghee': 'تیل و گھی',
-    'fuel': 'پٹرول و ایندھن',
-    'gas/fuel': 'گیس و ایندھن',
-    'gas cylinder': 'گیس سلنڈر',
-    'packaging': 'پیکنگ و ڈسپوزل',
-    'cleaning': 'صفائی کا سامان',
-    'miscellaneous': 'متفرق اخراجات',
-    'other': 'دیگر اخراجات'
+    'packing': 'پیکنگ',
+    'packaging': 'پیکنگ',
+    'spices': 'مصالحہ جات'
   },
 
   // Units Translation
@@ -53,57 +49,6 @@ const I18n = {
       'gm': 'گرام',
       'ml': 'ملی لیٹر'
     }
-  },
-
-  // Category Quick Item Suggestions in Urdu
-  categoryItemsUrdu: {
-    'vegetables': [
-      'ٹماٹر', 'پیاز', 'آلو', 'ادرک لہسن', 'ہری مرچیں', 
-      'دھنیا و پودینہ', 'بند گوبھی', 'شملہ مرچ', 'کھیرے', 
-      'گاجر', 'لیموں', 'پالک', 'مٹر'
-    ],
-    'meat/chicken': [
-      'زندہ برائلر مرغی', 'بون لیس چکن', 'تکہ کٹ چکن', 
-      'چکن قیمہ', 'بڑا گوشت (بیف)', 'مٹن (بکرے کا گوشت)', 'مچھلی'
-    ],
-    'oil & ghee': [
-      'کوکنگ آئل (16L ٹن)', 'کوکنگ آئل پاؤچ', 'بناسپتی گھی', 
-      'دیسی گھی', 'سرسوں کا تیل'
-    ],
-    'spices': [
-      'بریانی مصالحہ', 'سرخ مرچ پاؤڈر', 'ہلدی', 
-      'سفید زیرہ', 'کالی مرچ', 'دھنیا پاؤڈر', 
-      'گرم مصالحہ', 'نمک', 'چھوٹی الائچی', 'ثابت گرم مصالحہ'
-    ],
-    'grocery & spices': [
-      'آٹا (فائن / چکی)', 'چاول (باسمتی)', 'چینی', 'چائے کی پتی',
-      'بریانی مصالحہ', 'سرخ مرچ', 'ہلدی', 'زیرہ', 'نمک', 'دالیں'
-    ],
-    'dairy': [
-      'تازہ دودھ', 'دہی', 'کوکنگ کریم', 'پنیر (چیز)', 
-      'مکھن', 'انڈے (درجن / کریٹ)', 'مایونیز'
-    ],
-    'packaging': [
-      'کھانے کے ڈبے', 'براؤن پیپر بیگز', 'ایلومینیم فوائل', 
-      'کلنگ ریپ رول', 'پلاسٹک چمچ', 'رائتہ / سوس کپس', 'ریپنگ پیپر'
-    ],
-    'gas/fuel': [
-      'ایل پی جی کمرشل سلنڈر (45kg)', 'گھریلو سلنڈر (11.8kg)', 
-      'گیس ریفلنگ', 'جنریٹر پٹرول', 'بائیک پٹرول'
-    ],
-    'fuel': [
-      'جنریٹر پٹرول', 'بائیک پٹرول', 'گاڑی پٹرول / فیول'
-    ],
-    'gas cylinder': [
-      'کمرشل سلنڈر', 'گھریلو سلنڈر', 'گیس ریفل'
-    ],
-    'other': [
-      'ڈش واشنگ صابن', 'سرف و فنائل', 'ٹشو رول', 
-      'ہاتھ دھونے کا صابن', 'چائے کی پتی', 'چینی', 'آٹا / میدہ'
-    ],
-    'miscellaneous': [
-      'برتن و اوزار', 'مرمت و مینٹیننس', 'برف', 'دیگر سودا سلف'
-    ]
   },
 
   // Master Translation Dictionary
@@ -175,8 +120,8 @@ const I18n = {
     'modal_edit_expense_title': { en: 'Edit Expense', ur: 'خرچہ تبدیل کریں' },
     'form_date': { en: 'Date', ur: 'تاریخ' },
     'form_category': { en: 'Category', ur: 'کیٹیگری' },
-    'form_item_name': { en: 'Item Name', ur: 'چیز کا نام' },
-    'form_item_placeholder': { en: 'Type or pick an item name...', ur: 'چیز کا نام لکھیں یا نیچے سے منتخب کریں...' },
+    'form_item_name': { en: 'Item / Detail', ur: 'چیز / تفصیل' },
+    'form_item_placeholder': { en: 'Defaults to category name...', ur: 'خالی چھوڑنے پر کیٹیگری کا نام آئے گا...' },
     'form_amount': { en: 'Amount', ur: 'رقم' },
     'form_quantity': { en: 'Quantity', ur: 'مقدار' },
     'form_unit': { en: 'Unit', ur: 'اکائی (یونٹ)' },
@@ -313,27 +258,9 @@ const I18n = {
     return langUnits[unit] || unit;
   },
 
-  // Get quick suggestions for category
+  // Suggestions removed per simplification
   getItemSuggestions(catName) {
-    const lower = (catName || '').toLowerCase().trim();
-    let key = 'other';
-
-    if (lower.includes('veg') || lower.includes('سبزی')) key = 'vegetables';
-    else if (lower.includes('meat') || lower.includes('chicken') || lower.includes('گوشت') || lower.includes('مرغی')) key = 'meat/chicken';
-    else if (lower.includes('oil') || lower.includes('ghee') || lower.includes('تیل') || lower.includes('گھی')) key = 'oil & ghee';
-    else if (lower.includes('spice') || lower.includes('مصالح')) key = 'spices';
-    else if (lower.includes('dairy') || lower.includes('دودھ')) key = 'dairy';
-    else if (lower.includes('pack') || lower.includes('پیکنگ')) key = 'packaging';
-    else if (lower.includes('gas') || lower.includes('fuel') || lower.includes('پٹرول') || lower.includes('سلنڈر')) key = 'gas/fuel';
-
-    if (this.isUrdu()) {
-      return this.categoryItemsUrdu[key] || this.categoryItemsUrdu.other;
-    } else {
-      if (window.CATEGORY_ITEMS && window.CATEGORY_ITEMS[key]) {
-        return window.CATEGORY_ITEMS[key];
-      }
-      return this.categoryItemsUrdu[key] || [];
-    }
+    return [];
   },
 
   // Set Language and update DOM

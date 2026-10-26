@@ -325,10 +325,16 @@ app.post('/api/expenses', (req, res) => {
     const { date, item_name, category_id, amount, quantity, unit, vendor, notes } = req.body;
 
     if (!date) return res.status(400).json({ error: 'Date is required (YYYY-MM-DD)' });
-    if (!item_name || !item_name.trim()) return res.status(400).json({ error: 'Item name is required' });
     if (!category_id) return res.status(400).json({ error: 'Category is required' });
     if (amount === undefined || amount === null || isNaN(amount) || Number(amount) <= 0) {
       return res.status(400).json({ error: 'Valid amount greater than 0 is required' });
+    }
+
+    // Default item_name to category name if not provided
+    let finalItemName = (item_name && item_name.trim()) ? item_name.trim() : null;
+    if (!finalItemName) {
+      const cat = db.prepare('SELECT name FROM categories WHERE id = ?').get(category_id);
+      finalItemName = cat ? cat.name : 'Expense';
     }
 
     const insert = db.prepare(`
@@ -338,7 +344,7 @@ app.post('/api/expenses', (req, res) => {
 
     const result = insert.run(
       date,
-      item_name.trim(),
+      finalItemName,
       category_id,
       Number(amount),
       quantity ? Number(quantity) : null,
@@ -370,10 +376,16 @@ app.put('/api/expenses/:id', (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Expense not found' });
 
     if (!date) return res.status(400).json({ error: 'Date is required' });
-    if (!item_name || !item_name.trim()) return res.status(400).json({ error: 'Item name is required' });
     if (!category_id) return res.status(400).json({ error: 'Category is required' });
     if (amount === undefined || amount === null || isNaN(amount) || Number(amount) <= 0) {
       return res.status(400).json({ error: 'Valid amount greater than 0 is required' });
+    }
+
+    // Default item_name to category name if not provided
+    let finalItemName = (item_name && item_name.trim()) ? item_name.trim() : null;
+    if (!finalItemName) {
+      const cat = db.prepare('SELECT name FROM categories WHERE id = ?').get(category_id);
+      finalItemName = cat ? cat.name : 'Expense';
     }
 
     const update = db.prepare(`
@@ -384,7 +396,7 @@ app.put('/api/expenses/:id', (req, res) => {
 
     update.run(
       date,
-      item_name.trim(),
+      finalItemName,
       category_id,
       Number(amount),
       quantity ? Number(quantity) : null,

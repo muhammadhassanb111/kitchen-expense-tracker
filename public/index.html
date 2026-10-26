@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kitchen Expense Tracker</title>
-  <link rel="stylesheet" href="css/style.css?v=3.7">
+  <link rel="stylesheet" href="css/style.css?v=3.8">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
 </head>
 <body>
@@ -562,27 +562,15 @@
               </div>
             </div>
 
-            <!-- Item Name with Combobox & Category Suggestions -->
-            <div class="form-group" style="position: relative;">
-              <label for="expItemInput"><span data-i18n="form_item_name">Item Name</span> <span class="required">*</span></label>
-              <div class="combobox-wrapper">
-                <input type="text" id="expItemInput" placeholder="Type or pick an item name..." data-i18n-placeholder="form_item_placeholder" required autocomplete="off">
-                <button type="button" id="toggleItemDropdownBtn" class="combobox-toggle-btn" title="Show category suggestions">
-                  ▼
-                </button>
-                <div id="itemDropdownMenu" class="combobox-menu" style="display:none;"></div>
-              </div>
-              <div class="category-suggestions-container">
-                <div class="suggestions-header">
-                  <span id="suggestionsCategoryLabel" data-i18n="suggestions_label">Suggestions:</span>
-                </div>
-                <div id="quickItemChips" class="quick-chips-row"></div>
-              </div>
-            </div>
-
             <div class="form-group">
               <label for="expAmountInput"><span data-i18n="form_amount">Amount</span> (<span class="currency-label">PKR</span>) <span class="required">*</span></label>
               <input type="number" id="expAmountInput" step="any" min="0.01" placeholder="0.00" class="amount-large-input" required>
+            </div>
+
+            <!-- Optional Item Name / Details -->
+            <div class="form-group">
+              <label for="expItemInput"><span data-i18n="form_item_name">Item / Detail</span> <span class="text-muted" data-i18n="optional_label">(Optional)</span></label>
+              <input type="text" id="expItemInput" placeholder="Defaults to category name..." data-i18n-placeholder="form_item_placeholder" autocomplete="off">
             </div>
 
             <div class="form-row">
@@ -815,12 +803,12 @@
   </div>
 
   <!-- Offline JavaScript Modules -->
-  <script src="js/icons.js?v=3.7"></script>
-  <script src="js/i18n.js?v=3.7"></script>
-  <script src="js/app.js?v=3.7"></script>
-  <script src="js/dashboard.js?v=3.7"></script>
-  <script src="js/expenses.js?v=3.7"></script>
-  <script src="js/payouts.js?v=3.7"></script>
-  <script src="js/categories.js?v=3.7"></script>
+  <script src="js/icons.js?v=3.8"></script>
+  <script src="js/i18n.js?v=3.8"></script>
+  <script src="js/app.js?v=3.8"></script>
+  <script src="js/dashboard.js?v=3.8"></script>
+  <script src="js/expenses.js?v=3.8"></script>
+  <script src="js/payouts.js?v=3.8"></script>
+  <script src="js/categories.js?v=3.8"></script>
 </body>
 </html>
