@@ -87,7 +87,6 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
     CREATE INDEX IF NOT EXISTS idx_expenses_created_at ON expenses(created_at);
     CREATE INDEX IF NOT EXISTS idx_payouts_payout_date ON payouts(payout_date);
-    CREATE INDEX IF NOT EXISTS idx_payouts_income_type ON payouts(income_type);
   `);
 
   // Migrate payouts schema if missing income_type or payment_method
@@ -99,6 +98,7 @@ function initDatabase() {
     if (!payoutCols.includes('payment_method')) {
       currentDb.prepare("ALTER TABLE payouts ADD COLUMN payment_method TEXT DEFAULT 'cash'").run();
     }
+    currentDb.prepare("CREATE INDEX IF NOT EXISTS idx_payouts_income_type ON payouts(income_type)").run();
   } catch (err) {
     console.error('Payouts migration notice:', err.message);
   }
