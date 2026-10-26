@@ -105,7 +105,7 @@ const I18n = {
     'categories_count_badge': { en: 'categories', ur: 'کیٹیگریز' },
 
     // Expenses Tab
-    'search_placeholder': { en: 'Search item, vendor, or note...', ur: 'چیز کا نام، دکان یا نوٹ تلاش کریں...' },
+    'search_placeholder': { en: 'Search expenses...', ur: 'خرچ تلاش کریں...' },
     'all_categories': { en: 'All Categories', ur: 'تمام کیٹیگریز' },
     'export_csv': { en: 'Export CSV', ur: 'ایکسپورٹ CSV' },
     'showing_label': { en: 'Showing', ur: 'دکھائے جا رہے ہیں:' },

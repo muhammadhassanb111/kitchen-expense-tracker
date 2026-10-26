@@ -274,6 +274,7 @@ const Categories = {
     listContainer.innerHTML = `
       <div class="cat-expenses-list">
         ${expenses.map((item) => {
+          const catName = window.I18n ? window.I18n.getCategoryName(item.category_name || item.item_name) : (item.category_name || item.item_name);
           const unitStr = item.unit ? (window.I18n ? window.I18n.getUnitName(item.unit) : item.unit) : '';
           return `
           <div class="cat-expense-card" data-id="${item.id}">
@@ -281,13 +282,9 @@ const Categories = {
               <div class="cat-expense-date-badge">
                 ${App.formatDate(item.date)}
               </div>
-              <div class="cat-expense-title">${this.escapeHtml(item.item_name)}</div>
+              <div class="cat-expense-title">${this.escapeHtml(catName)}</div>
               <div class="cat-expense-details">
-                ${item.quantity ? `<span>${item.quantity} ${this.escapeHtml(unitStr)}</span>` : ''}
-                ${item.quantity && item.vendor ? '<span class="sep">•</span>' : ''}
-                ${item.vendor ? `<span>🏪 ${this.escapeHtml(item.vendor)}</span>` : ''}
-                ${(item.quantity || item.vendor) && item.notes ? '<span class="sep">•</span>' : ''}
-                ${item.notes ? `<em>${this.escapeHtml(item.notes)}</em>` : ''}
+                ${item.quantity ? `<span><strong>${item.quantity}</strong> ${this.escapeHtml(unitStr)}</span>` : ''}
               </div>
             </div>
 

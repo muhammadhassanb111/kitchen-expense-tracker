@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kitchen Expense Tracker</title>
-  <link rel="stylesheet" href="css/style.css?v=3.8">
+  <link rel="stylesheet" href="css/style.css?v=3.9">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
 </head>
 <body>
@@ -267,7 +267,7 @@
             <div class="expense-toolbar">
               <div class="search-box">
                 <span class="search-icon" data-icon="search" data-size="18"></span>
-                <input type="text" id="expenseSearchInput" placeholder="Search item, vendor, or note..." data-i18n-placeholder="search_placeholder">
+                <input type="text" id="expenseSearchInput" placeholder="Search expenses..." data-i18n-placeholder="search_placeholder">
                 <button id="clearSearchBtn" class="clear-btn" style="display:none;" aria-label="Clear search">✕</button>
               </div>
 
@@ -567,12 +567,6 @@
               <input type="number" id="expAmountInput" step="any" min="0.01" placeholder="0.00" class="amount-large-input" required>
             </div>
 
-            <!-- Optional Item Name / Details -->
-            <div class="form-group">
-              <label for="expItemInput"><span data-i18n="form_item_name">Item / Detail</span> <span class="text-muted" data-i18n="optional_label">(Optional)</span></label>
-              <input type="text" id="expItemInput" placeholder="Defaults to category name..." data-i18n-placeholder="form_item_placeholder" autocomplete="off">
-            </div>
-
             <div class="form-row">
               <div class="form-group flex-1">
                 <label for="expQtyInput"><span data-i18n="form_quantity">Quantity</span> <span class="text-muted" data-i18n="optional_label">(Optional)</span></label>
@@ -592,16 +586,6 @@
                   <option value="ml">millilitre (ml)</option>
                 </select>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="expVendorInput"><span data-i18n="form_vendor">Vendor / Shop</span> <span class="text-muted" data-i18n="optional_label">(Optional)</span></label>
-              <input type="text" id="expVendorInput" placeholder="e.g. Sabzi Mandi, Tariq Poultry, Metro" data-i18n-placeholder="form_vendor_placeholder">
-            </div>
-
-            <div class="form-group">
-              <label for="expNotesInput"><span data-i18n="form_notes">Note</span> <span class="text-muted" data-i18n="optional_label">(Optional)</span></label>
-              <textarea id="expNotesInput" rows="2" placeholder="e.g. Delivery included, wholesale price" data-i18n-placeholder="form_notes_placeholder"></textarea>
             </div>
           </div>
 
@@ -803,12 +787,12 @@
   </div>
 
   <!-- Offline JavaScript Modules -->
-  <script src="js/icons.js?v=3.8"></script>
-  <script src="js/i18n.js?v=3.8"></script>
-  <script src="js/app.js?v=3.8"></script>
-  <script src="js/dashboard.js?v=3.8"></script>
-  <script src="js/expenses.js?v=3.8"></script>
-  <script src="js/payouts.js?v=3.8"></script>
-  <script src="js/categories.js?v=3.8"></script>
+  <script src="js/icons.js?v=3.9"></script>
+  <script src="js/i18n.js?v=3.9"></script>
+  <script src="js/app.js?v=3.9"></script>
+  <script src="js/dashboard.js?v=3.9"></script>
+  <script src="js/expenses.js?v=3.9"></script>
+  <script src="js/payouts.js?v=3.9"></script>
+  <script src="js/categories.js?v=3.9"></script>
 </body>
 </html>

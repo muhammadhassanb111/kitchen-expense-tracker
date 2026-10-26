@@ -296,9 +296,9 @@ app.get('/api/expenses', (req, res) => {
       params.push(categoryId);
     }
     if (search && search.trim()) {
-      query += ` AND (e.item_name LIKE ? OR e.vendor LIKE ? OR e.notes LIKE ?)`;
+      query += ` AND (e.item_name LIKE ? OR c.name LIKE ? OR e.vendor LIKE ? OR e.notes LIKE ?)`;
       const term = `%${search.trim()}%`;
-      params.push(term, term, term);
+      params.push(term, term, term, term);
     }
 
     query += ` ORDER BY e.date DESC, e.id DESC`;
@@ -710,9 +710,9 @@ app.get('/api/export/csv', (req, res) => {
       params.push(categoryId);
     }
     if (search && search.trim()) {
-      query += ` AND (e.item_name LIKE ? OR e.vendor LIKE ? OR e.notes LIKE ?)`;
+      query += ` AND (e.item_name LIKE ? OR c.name LIKE ? OR e.vendor LIKE ? OR e.notes LIKE ?)`;
       const term = `%${search.trim()}%`;
-      params.push(term, term, term);
+      params.push(term, term, term, term);
     }
 
     query += ` ORDER BY e.date ASC, e.id ASC`;
@@ -720,7 +720,7 @@ app.get('/api/export/csv', (req, res) => {
 
     const currency = getSetting('currency', 'PKR');
 
-    const headers = ['ID', 'Date', 'Item Name', 'Category', `Amount (${currency})`, 'Quantity', 'Unit', 'Vendor', 'Notes'];
+    const headers = ['ID', 'Date', 'Category', `Amount (${currency})`, 'Quantity', 'Unit'];
 
     const escapeCsv = (val) => {
       if (val === null || val === undefined) return '""';
@@ -737,17 +737,14 @@ app.get('/api/export/csv', (req, res) => {
       csvContent += [
         row.id,
         row.date,
-        row.item_name,
         row.category_name,
         row.amount.toFixed(2),
         row.quantity !== null ? row.quantity : '',
-        row.unit || '',
-        row.vendor || '',
-        row.notes || ''
+        row.unit || ''
       ].map(escapeCsv).join(',') + '\r\n';
     }
 
-    csvContent += ['', '', 'TOTAL', '', totalAmount.toFixed(2), '', '', '', ''].map(escapeCsv).join(',') + '\r\n';
+    csvContent += ['', 'TOTAL', '', totalAmount.toFixed(2), '', ''].map(escapeCsv).join(',') + '\r\n';
 
     const filename = `expenses_${startDate || 'all'}_to_${endDate || 'all'}.csv`;
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');

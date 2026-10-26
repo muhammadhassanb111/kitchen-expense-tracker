@@ -259,21 +259,21 @@ const Dashboard = {
     }
 
     container.innerHTML = recent.map((item) => {
-      const catName = window.I18n ? window.I18n.getCategoryName(item.category_name) : item.category_name;
+      const catName = window.I18n ? window.I18n.getCategoryName(item.category_name || item.item_name) : (item.category_name || item.item_name);
       const unitStr = item.unit ? (window.I18n ? window.I18n.getUnitName(item.unit) : item.unit) : '';
 
       return `
       <div class="expense-card" style="border:none; border-bottom: 1px solid var(--border-subtle); border-radius: 0; box-shadow: none; margin: 0; padding: 16px 20px;">
         <div class="exp-card-header">
           <div style="flex:1;">
-            <div class="exp-item-title">${this.escapeHtml(item.item_name)}</div>
-            <div class="exp-card-meta mt-1">
-              <span class="category-pill" style="background-color: ${item.category_color};">
+            <div class="exp-item-title">
+              <span class="category-pill" style="background-color: ${item.category_color}; font-size: 0.95rem; padding: 4px 10px;">
                 ${this.escapeHtml(catName)}
               </span>
+            </div>
+            <div class="exp-card-meta mt-1">
               <span>${App.formatDate(item.date)}</span>
-              ${item.quantity ? `<span>• ${item.quantity} ${this.escapeHtml(unitStr)}</span>` : ''}
-              ${item.vendor ? `<span>• 🏪 ${this.escapeHtml(item.vendor)}</span>` : ''}
+              ${item.quantity ? `<span>• <strong>${item.quantity}</strong> ${this.escapeHtml(unitStr)}</span>` : ''}
             </div>
           </div>
           <div class="exp-card-amount">
